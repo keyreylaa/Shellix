@@ -8,6 +8,14 @@ fi
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/share/bin:/usr/share/sbin:/usr/local/bin:/usr/local/sbin:/system/bin:/system/xbin
 export HOME=/root
 
+# Map common Android GIDs so 'groups'/'id' don't warn about unknown IDs.
+for entry in "everybody:3003" "all:3003" "sdcard_rw:1015" "media_rw:1023" "network:3001" "cache:2001" "shell:2000" "system:1000"; do
+  name="${entry%%:*}"; gid="${entry##*:}"
+  if ! grep -q ":${gid}:" /etc/group 2>/dev/null; then
+    echo "${name}:x:${gid}:" >> /etc/group
+  fi
+done
+
 if [ ! -s /etc/resolv.conf ]; then
     echo "nameserver 8.8.8.8" > /etc/resolv.conf
 fi
