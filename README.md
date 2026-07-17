@@ -38,10 +38,21 @@ A Material 3 terminal emulator for Android that boots a real Ubuntu 24.04 Noble 
 - The app is built and verified via GitHub Actions (`.github/workflows/android.yml`).
 
 ## Roadmap
-- Packages tab (browse/install/uninstall apt packages with search).
-- Voice-to-command input.
-- Tab bar UI for sessions.
-- Inline terminal image rendering.
+
+**Done in v1.0.0**
+- [x] Ubuntu 24.04 Noble rootfs + first-run setup wizard (sudo user)
+- [x] Packages tab (browse / search / install / uninstall / update apt packages)
+- [x] Clear terminal action
+- [x] Voice-to-command input (mic → terminal, editable before send)
+- [x] Dracula terminal theme + Shift key
+- [x] Pure-Kotlin tar.gz extraction (no external `tar` binary)
+
+**Next**
+- [ ] Tab bar UI for sessions (visual session switcher)
+- [ ] Inline terminal image rendering (sixel / image preview)
+- [ ] Package categories / sources management UI
+- [ ] Per-app theme + font settings persistence
+- [ ] Wake-lock during active session for stability
 
 ## Credits
 - Fork of [ReTerminal](https://github.com/RohitKushvaha01/ReTerminal), which is a fork of [Termux](https://github.com/termux/termux-app).
