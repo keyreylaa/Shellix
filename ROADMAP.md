@@ -51,6 +51,17 @@ Architecture overview is at the bottom of this page so the rationale for each fe
 - **Security audit**: review PRoot/seccomp surface, file permissions on extracted rootfs, `init.sh` privilege flow, content:// URI handling in the background picker.
 - **Performance audit**: `compileDebugKotlin` / APK build are slow in CI; the bundled C++/native (PRoot, termux) makes the APK heavy. Investigate trimming unused native code, R8/full-mode, and build caching to speed local + CI builds and shrink the APK.
 
+## v1.2.0 — Performance & Security hardening (shipped)
+- **ABI restricted to arm64-v8a** (P2): PRoot C++ compiled once instead of 4×; only
+  arm64 native libs packaged. Smaller APK + faster CI build. (Drops 32-bit ARM / x86 emulator.)
+- **R8 minify + shrink + obfuscate** (P1) and **R8 full mode** (P3): tree-shaking,
+  resource shrinking (`isShrinkResources`), PNG crunching. termux / Coil / coroutines /
+  Compose kept via explicit proguard rules.
+- **English-only resources** (P4): dropped bundled `ar`/`zh` translations.
+- **Security fixes**: `UbuntuCommand` wraps the command in quotes (no word-splitting);
+  `setup-pass.txt` (plaintext Ubuntu password) is deleted from `filesDir` after first boot.
+- Validated on-device (arm64); CI build green. See `docs/research/2026-07-18-security-performance.md`.
+
 ---
 
 ## Architecture Context
