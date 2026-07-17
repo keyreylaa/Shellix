@@ -86,6 +86,12 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        ndk {
+            // Shellix targets modern Android devices (arm64-v8a). Building/packaging
+            the other ABIs (armeabi-v7a/x86/x86_64) only inflates the APK and the
+            NDK compile time for the PRoot native library with no real-world benefit.
+            abiFilters += listOf("arm64-v8a")
+        }
     }
 
 
