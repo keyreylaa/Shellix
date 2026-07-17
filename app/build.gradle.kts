@@ -37,10 +37,12 @@ android {
                 } else {
                     (properties["storeFile"] as String?)?.let { File(it) }
                 }
-                
+
                 storePassword = properties["storePassword"] as String?
-            } else {
-                println("Signing properties file not found at $propertiesFilePath, falling back to debug keystore")
+            }
+
+            if (storePassword.isNullOrBlank() || keyPassword.isNullOrBlank() || keyAlias.isNullOrBlank() || storeFile == null) {
+                println("Release signing incomplete, falling back to debug keystore")
                 storeFile = file(layout.buildDirectory.dir("../testkey.keystore"))
                 storePassword = "testkey"
                 keyAlias = "testkey"
