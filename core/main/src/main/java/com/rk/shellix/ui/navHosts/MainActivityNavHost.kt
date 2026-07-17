@@ -63,6 +63,11 @@ fun MainActivityNavHost(
             UpdateStatusBar(mainActivity.window, true)
             Customization(mainActivity = mainActivity, navController = navController)
         }
+
+        composable(MainActivityRoutes.Packages.route) {
+            UpdateStatusBar(mainActivity.window, true)
+            PackagesScreen(mainActivity = mainActivity, navController = navController)
+        }
     }
 }
 
