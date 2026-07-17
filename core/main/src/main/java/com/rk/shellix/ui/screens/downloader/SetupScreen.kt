@@ -137,15 +137,24 @@ fun SetupScreen(
 
                 statusText = "Extracting..."
                 val ubuntuDir = context.ubuntuDir()
-                val extractOk = runCatching {
-                    extractTar(outputFile, ubuntuDir, hardDeref = false)
-                }.getOrElse { firstErr ->
-                    Log.w("RootfsSource", "tar extract failed, retrying with --hard-dereference: ${firstErr.message}")
-                    extractTar(outputFile, ubuntuDir, hardDeref = true)
-                }
+                val extractResult = extractTar(outputFile, ubuntuDir, hardDeref = false)
+                    .onFailure { firstErr ->
+                        Log.w("RootfsSource", "tar extract (pass 1) failed: ${firstErr.message}")
+                        extractTar(outputFile, ubuntuDir, hardDeref = true)
+                    }
 
-                if (!extractOk) {
-                    throw java.io.IOException("Failed to extract ${outputFile.name}. Ensure the downloaded archive is complete and the device has free storage.")
+                if (extractResult.isFailure) {
+                    val free = runCatching {
+                        val stat = android.os.StatFs(ubuntuDir.absolutePath)
+                        "${stat.availableBytes / (1024 * 1024)} MB free"
+                    }.getOrDefault("unknown free space")
+                    val cause = extractResult.exceptionOrNull()
+                    throw java.io.IOException(
+                        "Failed to extract ${outputFile.name} (${outputFile.length() / (1024 * 1024)} MB).\n" +
+                        "Cause: ${cause?.message ?: "unknown"}\n" +
+                        "Storage: $free\n" +
+                        "Check: archive downloaded fully, device has free space, and file is not corrupted."
+                    )
                 }
 
                 withContext(Dispatchers.Main) {
@@ -169,10 +178,43 @@ fun SetupScreen(
             !isSetupComplete -> {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     if (error != null) {
-                        Text("Setup Failed: $error", color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { retryKey++ }) {
-                            Text("Retry")
+                        Card(
+                            modifier = Modifier.fillMaxWidth(0.92f),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            )
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    "Setup Failed",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                SelectionContainer {
+                                    Text(
+                                        error!!,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Button(onClick = { retryKey++ }) {
+                                        Text("Retry")
+                                    }
+                                    OutlinedButton(onClick = {
+                                        val cm = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                        cm.setPrimaryClip(android.content.ClipData.newPlainText("Shellix setup error", error))
+                                        toast("Error copied to clipboard")
+                                    }) {
+                                        Text("Copy error")
+                                    }
+                                }
+                            }
                         }
                     } else {
                         Text(statusText.ifEmpty { installingStr }, style = MaterialTheme.typography.bodyLarge)
@@ -192,12 +234,12 @@ fun SetupScreen(
  *  Returns true on success. The [hardDeref] parameter is kept for signature
  *  compatibility but is no longer needed since hardlinks are emulated by copy. */
 @Suppress("UNUSED_PARAMETER")
-private fun extractTar(file: File, dest: File, hardDeref: Boolean): Boolean {
+private fun extractTar(file: File, dest: File, hardDeref: Boolean): Result<Unit> {
     dest.mkdirs()
     val destCanonical = dest.canonicalPath
     val pendingHardlinks = mutableListOf<Pair<TarArchiveEntry, File>>()
 
-    try {
+    return runCatching {
         GzipCompressorInputStream(FileInputStream(file)).use { gzipIn ->
             TarArchiveInputStream(gzipIn).use { tarIn ->
                 var entry = tarIn.nextEntry
@@ -255,10 +297,8 @@ private fun extractTar(file: File, dest: File, hardDeref: Boolean): Boolean {
                 candidate.createNewFile()
             }
         }
-        return true
-    } catch (e: IOException) {
-        Log.e("RootfsSource", "extractTar failed: ${e.message}", e)
-        return false
+    }.onFailure { e ->
+        Log.e("RootfsSource", "extractTar failed for ${file.absolutePath} -> ${dest.absolutePath}", e)
     }
 }
 
