@@ -1,5 +1,5 @@
-<resources>
-    <style name="Base.Theme.Shellix" parent="Theme.Material3.Dark.NoActionBar">
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Base.Theme.Shellix" parent="Theme.Material3.Dark.NoActionBar" tools:targetApi="27">
         <!-- Bars -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
@@ -67,7 +67,7 @@
         <item name="colorSurface">@android:color/black</item>
     </style>
     
-    <style name="Base.Theme.Shellix.Monet" parent="Theme.Material3.DynamicColors.Dark">
+    <style name="Base.Theme.Shellix.Monet" parent="Theme.Material3.DynamicColors.Dark" tools:targetApi="27">
         <!-- Bars -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
