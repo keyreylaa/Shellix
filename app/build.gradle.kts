@@ -92,7 +92,7 @@ android {
         // P4: ship only English string/resources. The app UI is English-only;
         // the bundled ar/zh translations in core/resources are dropped to shrink
         // the APK (users fall back to English, which is the default).
-        resourceConfigs += listOf("en")
+        resourceConfigurations += listOf("en")
         ndk {
             // Shellix targets modern Android devices (arm64-v8a). Building/packaging
             // the other ABIs only inflates the APK and the NDK compile time.
