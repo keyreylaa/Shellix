@@ -1,7 +1,6 @@
 package com.rk.shellix.ui.screens.terminal
 
 import android.content.Context
-import com.rk.libcommons.alpineHomeDir
 import com.rk.libcommons.child
 import com.rk.libcommons.createFileIfNot
 import com.rk.libcommons.localBinDir
@@ -9,6 +8,7 @@ import com.rk.libcommons.localDir
 import com.rk.libcommons.localLibDir
 import com.rk.shellix.App.Companion.getTempDir
 import com.rk.shellix.BuildConfig
+import com.rk.settings.Settings
 import com.rk.shellix.ui.screens.settings.WorkingMode
 import com.termux.terminal.TerminalEmulator
 import com.termux.terminal.TerminalSession
@@ -36,7 +36,7 @@ object MkSession {
                 "EXTERNAL_STORAGE" to System.getenv("EXTERNAL_STORAGE")
             )
 
-            val workingDir = pendingCommand?.workingDir ?: alpineHomeDir().path
+            val workingDir = pendingCommand?.workingDir ?: ubuntuHomeDir().path
 
             val initFile: File = localBinDir().child("init-host")
             if (initFile.exists().not()) {
@@ -50,6 +50,15 @@ object MkSession {
                 if (exists().not()) {
                     createFileIfNot()
                     assets.open("init.sh").bufferedReader().use { it.readText() }.let {
+                        writeText(it)
+                    }
+                }
+            }
+
+            localBinDir().child("setup-user.sh").apply {
+                if (exists().not()) {
+                    createFileIfNot()
+                    assets.open("setup-user.sh").bufferedReader().use { it.readText() }.let {
                         writeText(it)
                     }
                 }
@@ -100,9 +109,21 @@ object MkSession {
                 env.addAll(it)
             }
 
+            // Forward stored Ubuntu user creds to init.sh on first boot so it can
+            // run setup-user.sh and create the sudo user inside the proot.
+            if (Settings.ubuntu_user.isNotBlank() && !Settings.setup_user_done) {
+                env.add("SETUP_USER=${Settings.ubuntu_user}")
+                // Password is read from the secure creds file written by the wizard.
+                val passFile = filesDir.child("setup-pass.txt")
+                if (passFile.exists()) {
+                    env.add("SETUP_PASS=${passFile.readText().trim()}")
+                }
+                Settings.setup_user_done = true
+            }
+
             val args: Array<String>
             val shell = if (pendingCommand == null) {
-                args = if (workingMode == WorkingMode.ALPINE) {
+                args = if (workingMode == WorkingMode.UBUNTU) {
                     arrayOf("-c", initFile.absolutePath)
                 } else {
                     arrayOf()

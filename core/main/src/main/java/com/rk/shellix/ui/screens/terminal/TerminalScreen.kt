@@ -176,9 +176,9 @@ private fun AddSessionDialog(onDismiss: () -> Unit, onCreateSession: (Int) -> Un
     BasicAlertDialog(onDismissRequest = onDismiss) {
         PreferenceGroup {
             SettingsCard(
-                title = { Text("Alpine") },
-                description = { Text(stringResource(strings.alpine_desc)) },
-                onClick = { onCreateSession(WorkingMode.ALPINE) }
+                title = { Text("Ubuntu") },
+                description = { Text(stringResource(strings.ubuntu_desc)) },
+                onClick = { onCreateSession(WorkingMode.UBUNTU) }
             )
             SettingsCard(
                 title = { Text("Android") },
@@ -201,5 +201,5 @@ private fun generateUniqueSessionId(existingIds: List<String>): String {
 
 const val VIRTUAL_KEYS = "[" +
     "\n  [\"ESC\", {\"key\": \"/\", \"popup\": \"\\\\\"}, {\"key\": \"-\", \"popup\": \"|\"}, \"HOME\", \"UP\", \"END\", \"PGUP\"]," +
-    "\n  [\"TAB\", \"CTRL\", \"ALT\", \"LEFT\", \"DOWN\", \"RIGHT\", \"PGDN\"]" +
+    "\n  [\"TAB\", \"CTRL\", \"ALT\", \"SHIFT\", \"LEFT\", \"DOWN\", \"RIGHT\", \"PGDN\"]" +
     "\n]"

@@ -14,9 +14,9 @@ object Rootfs {
     }
 
     fun isRootfsInstalled(context: Context): Boolean {
-        val alpineDir = context.localDir().child("alpine")
-        val isExtracted = alpineDir.exists() && (alpineDir.list()?.any { it != "root" && it != "tmp" } == true)
-        val isArchivePresent = context.filesDir.child("alpine.tar.gz").exists()
+        val ubuntuDir = context.ubuntuDir()
+        val isExtracted = ubuntuDir.exists() && (ubuntuDir.list()?.any { it != "root" && it != "tmp" } == true)
+        val isArchivePresent = context.filesDir.child("ubuntu.tar.gz").exists()
         return isExtracted || isArchivePresent
     }
 }

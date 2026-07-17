@@ -58,7 +58,7 @@ fun SettingsCard(
 }
 
 object WorkingMode {
-    const val ALPINE = 0
+    const val UBUNTU = 0
     const val ANDROID = 1
 }
 
@@ -85,7 +85,7 @@ fun Settings(
         onBack = { navController.popBackStack() }
     ) {
         PreferenceGroup(heading = stringResource(strings.default_working_mode)) {
-            WorkingModeOption("Alpine", stringResource(strings.alpine_desc), WorkingMode.ALPINE, selectedWorkingMode) {
+            WorkingModeOption("Ubuntu", stringResource(strings.ubuntu_desc), WorkingMode.UBUNTU, selectedWorkingMode) {
                 selectedWorkingMode = it
                 Settings.working_Mode = it
             }

@@ -15,7 +15,7 @@ echo "[3/8] Fixing cross-package imports..."
 sed -i 's/com\.rk\.terminal/com.rk.shellix/g' \
   core/main/src/main/java/com/rk/settings/Settings.kt \
   core/main/src/main/java/com/rk/libcommons/Utils.kt \
-  core/main/src/main/java/com/rk/AlpineDocumentProvider.kt
+  core/main/src/main/java/com/rk/UbuntuDocumentProvider.kt
 
 echo "[4/8] Fixing manifest component names..."
 sed -i 's/com\.rk\.terminal\./com.rk.shellix./g' app/src/main/AndroidManifest.xml

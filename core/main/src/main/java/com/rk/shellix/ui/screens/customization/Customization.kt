@@ -177,6 +177,26 @@ fun Customization(
             )
         }
 
+        PreferenceGroup(heading = "Terminal Theme") {
+            PreferenceTemplate(
+                modifier = Modifier.clickable {
+                    TerminalThemes.applyDracula(context)
+                    toast("Dracula applied. Restart session to see colors.")
+                },
+                title = { Text("Dracula") },
+                description = { Text("Apply the Dracula color scheme") }
+            )
+
+            PreferenceTemplate(
+                modifier = Modifier.clickable {
+                    TerminalThemes.applyDefault(context)
+                    toast("Reverted to default colors.")
+                },
+                title = { Text("Default colors") },
+                description = { Text("Revert to the default color scheme") }
+            )
+        }
+
         ShortcutSection()
     }
 }

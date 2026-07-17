@@ -20,4 +20,4 @@ Todo.md
 **/build
 .vscode
 core/wasm3
-.agents
+.agent

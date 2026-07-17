@@ -13,7 +13,7 @@ import android.provider.DocumentsContract
 import android.provider.DocumentsProvider
 import android.util.Log
 import android.webkit.MimeTypeMap
-import com.rk.libcommons.alpineHomeDir
+import com.rk.libcommons.ubuntuHomeDir
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -22,9 +22,9 @@ import java.util.LinkedList
 import java.util.Locale
 import com.rk.shellix.R
 
-class AlpineDocumentProvider : DocumentsProvider() {
+class UbuntuDocumentProvider : DocumentsProvider() {
 
-    private val baseDir: File get() = context!!.alpineHomeDir()
+    private val baseDir: File get() = context!!.ubuntuHomeDir()
 
     override fun queryRoots(projection: Array<String>?): Cursor {
         val result = MatrixCursor(projection ?: DEFAULT_ROOT_PROJECTION)
@@ -202,7 +202,7 @@ class AlpineDocumentProvider : DocumentsProvider() {
 
     companion object {
         fun isDocumentProviderEnabled(context: Context): Boolean {
-            val componentName = ComponentName(context, AlpineDocumentProvider::class.java)
+            val componentName = ComponentName(context, UbuntuDocumentProvider::class.java)
             val state = context.packageManager.getComponentEnabledSetting(componentName)
             return state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
                     state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
@@ -210,7 +210,7 @@ class AlpineDocumentProvider : DocumentsProvider() {
 
         fun setDocumentProviderEnabled(context: Context, enabled: Boolean) {
             if (isDocumentProviderEnabled(context) == enabled) return
-            val componentName = ComponentName(context, AlpineDocumentProvider::class.java)
+            val componentName = ComponentName(context, UbuntuDocumentProvider::class.java)
             val newState = if (enabled) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
             context.packageManager.setComponentEnabledSetting(componentName, newState, PackageManager.DONT_KILL_APP)
         }

@@ -4,7 +4,7 @@
     <string name="use_shizuku">Auto Login to shizuku</string>
     <string name="use_shizuku_desc">Automatically execute rish command</string>
     <string name="default_working_mode">Default Working mode</string>
-    <string name="alpine_desc">Alpine Linux</string>
+    <string name="ubuntu_desc">Ubuntu 24.04 (Noble) Linux environment</string>
     <string name="android_desc">Shellix Android shell</string>
     <string name="customizations">Customizations</string>
     <string name="seccomp">SECCOMP</string>

@@ -82,6 +82,7 @@ dependencies {
     implementation(libs.anrwatchdog)
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.palette)
+    implementation(libs.okhttp)
 
     implementation(project(":core:resources"))
     implementation(project(":core:components"))

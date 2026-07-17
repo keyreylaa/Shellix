@@ -44,8 +44,16 @@ object Settings {
         set(value) = Preference.setFloat(key = "wallTransparency",value)
 
     var working_Mode
-        get() = Preference.getInt(key = "workingMode", default = WorkingMode.ALPINE)
+        get() = Preference.getInt(key = "workingMode", default = WorkingMode.UBUNTU)
         set(value) = Preference.setInt(key = "workingMode",value)
+
+    var ubuntu_user: String
+        get() = Preference.getString(key = "ubuntu_user", default = "")
+        set(value) = Preference.setString(key = "ubuntu_user", value)
+
+    var setup_user_done: Boolean
+        get() = Preference.getBoolean(key = "setup_user_done", default = false)
+        set(value) = Preference.setBoolean(key = "setup_user_done", value)
 
     var input_mode
         get() = Preference.getInt(key = "input_mode", default = InputMode.DEFAULT)

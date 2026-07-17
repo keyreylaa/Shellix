@@ -1,9 +1,9 @@
-ALPINE_DIR=$PREFIX/local/alpine
+UBUNTU_DIR=$PREFIX/local/ubuntu
 
-mkdir -p $ALPINE_DIR
+mkdir -p $UBUNTU_DIR
 
-if [ -z "$(ls -A "$ALPINE_DIR" | grep -vE '^(root|tmp)$')" ]; then
-    tar -xf "$PREFIX/files/alpine.tar.gz" -C "$ALPINE_DIR"
+if [ -z "$(ls -A "$UBUNTU_DIR" | grep -vE '^(root|tmp)$')" ]; then
+    tar -xf "$PREFIX/files/ubuntu.tar.gz" -C "$UBUNTU_DIR"
 fi
 
 ARGS="--kill-on-exit"
@@ -51,13 +51,13 @@ fi
 ARGS="$ARGS -b $PREFIX"
 ARGS="$ARGS -b /sys"
 
-if [ ! -d "$PREFIX/local/alpine/tmp" ]; then
- mkdir -p "$PREFIX/local/alpine/tmp"
- chmod 1777 "$PREFIX/local/alpine/tmp"
+if [ ! -d "$PREFIX/local/ubuntu/tmp" ]; then
+ mkdir -p "$PREFIX/local/ubuntu/tmp"
+ chmod 1777 "$PREFIX/local/ubuntu/tmp"
 fi
-ARGS="$ARGS -b $PREFIX/local/alpine/tmp:/dev/shm"
+ARGS="$ARGS -b $PREFIX/local/ubuntu/tmp:/dev/shm"
 
-ARGS="$ARGS -r $PREFIX/local/alpine"
+ARGS="$ARGS -r $PREFIX/local/ubuntu"
 ARGS="$ARGS -0"
 ARGS="$ARGS --link2symlink"
 ARGS="$ARGS --sysvipc"
