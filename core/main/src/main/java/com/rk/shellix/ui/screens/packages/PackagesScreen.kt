@@ -49,6 +49,22 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
     var confirmInstall by remember { mutableStateOf(false) }
     var sourcesText by remember { mutableStateOf<String?>(null) }
 
+    // Parses `dpkg -l` output. Installed packages have the status column "ii".
+    // dpkg -l emits a single-line summary (no embedded newlines), unlike
+    // `dpkg-query -W -f='${Description}'` whose Description field is multiline
+    // and breaks line-based parsing.
+    fun parseDpkgList(text: String): List<Pkg> {
+        return text.lines().mapNotNull { line ->
+            if (!line.startsWith("ii ")) return@mapNotNull null
+            val parts = line.split(Regex("\\s+")).filter { it.isNotEmpty() }
+            if (parts.size < 5) return@mapNotNull null
+            val name = parts[1]
+            val version = parts[2]
+            val summary = parts.subList(4, parts.size).joinToString(" ")
+            Pkg(name, version, summary)
+        }
+    }
+
     fun refresh() {
         if (Rootfs.isInstalled.value.not()) return
         scope.launch {
@@ -63,22 +79,6 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
                 failed = true
                 toast(it.message ?: "list failed")
             }
-        }
-    }
-
-    // Parses `dpkg -l` output. Installed packages have the status column "ii".
-    // dpkg -l emits a single-line summary (no embedded newlines), unlike
-    // `dpkg-query -W -f='${Description}'` whose Description field is multiline
-    // and breaks line-based parsing.
-    fun parseDpkgList(text: String): List<Pkg> {
-        return text.lines().mapNotNull { line ->
-            if (!line.startsWith("ii ")) return@mapNotNull null
-            val parts = line.split(Regex("\\s+")).filter { it.isNotEmpty() }
-            if (parts.size < 5) return@mapNotNull null
-            val name = parts[1]
-            val version = parts[2]
-            val summary = parts.subList(4, parts.size).joinToString(" ")
-            Pkg(name, version, summary)
         }
     }
 
