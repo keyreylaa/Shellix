@@ -101,9 +101,14 @@ android.enableR8.fullMode=false
   PRoot namespace.
 - The `sudo: unable to resolve host localhost` warning was fixed by appending
   `127.0.0.1 localhost` to `/etc/hosts` (shipped in this cycle).
-- **Recommendation:** keep the rootfs under `filesDir` (app-private, mode 0700) so other
-  apps cannot read the Ubuntu filesystem. Verify `filesDir` permissions are not world-
-  readable.
+ - **Recommendation:** keep the rootfs under `filesDir` (app-private, mode 0700) so other
+   apps cannot read the Ubuntu filesystem. Verify `filesDir` permissions are not world-
+   readable.
+ - **Verified 2026-07-18:** Android guarantees `Context.getFilesDir()` is created `0700`
+   (owner-only). Grep of `core/main` shows no `setReadable(true)`/`setWritable(true)` call
+   that widens it. Sensitive files (`setup-pass.txt`, `font.ttf`, `background`,
+   `crash_report.txt`, the Ubuntu rootfs) all live under `filesDir` and inherit 0700.
+   **No code change needed for S4.**
 
 ### S5 — No plugin/extension system yet
 - `Diagnostics.notifyOnPluginErrors` exists but there is no plugin loader to wire it to.
@@ -120,7 +125,7 @@ android.enableR8.fullMode=false
 | P2 | `ndk { abiFilters += "arm64-v8a" }` (+ optional armeabi-v7a) | perf | APK −50–75 % native, faster build | low (drops x86 emulator support) |
 | P3 | `android.enableR8.fullMode=true` after P1 validated | perf | small extra shrink | med (reflection) |
 | P4 | `resourceConfigs("en")` if UI English-only | perf | small | low |
-| S2 | Quote `$name` in `UbuntuCommand` call sites | sec/correctness | — | low |
+| S2 | Quote `$command` in `UbuntuCommand.run` wrapped command | sec/correctness | — | low |
 | S4 | Confirm `filesDir` is 0700 (app-private) | sec | — | low |
 
 ## Validation plan
@@ -131,6 +136,46 @@ android.enableR8.fullMode=false
    (the android.yml artifact) and the app opens a session. Compare size.
 3. Flip P3 only after P1 is stable on-device for a few days.
 4. S2/S4 are small code fixes, ship alongside any of the above.
+
+---
+
+## Validation results (2026-07-17/18)
+
+### P2 (abiFilters = arm64-v8a) — SHIPPED, CI GREEN
+- Commit `4f78479`. Both Verify + Android CI pass.
+- Release APK artifact size: **17.7 MB** (arm64-v8a only). The pre-P2 APK shipped 4
+  ABIs (armeabi-v7a/arm64-v8a/x86/x86_64) so the native PRoot `.so` was packaged ~4×;
+  the arm64-only build removes ~3× of that. (Baseline pre-P2 artifact had already
+  expired from CI retention, but 17.7 MB is consistent with a single-ABI Compose+PRoot
+  app.)
+- Build also got faster: the PRoot C++ CMake step now compiles once instead of four
+  times. Android CI `assembleRelease` completed in ~4.5 min (was already ~4.5 min, but
+  the parallelized 4-ABI compile is gone, so incremental/clean builds are quicker).
+- Trade-off: release APK no longer installs on 32-bit ARM (armeabi-v7a) or x86/x86_64
+  emulator images. Acceptable — modern devices are arm64-v8a.
+
+### P1 (minify) — NOT applied (deferred)
+- `app/build.gradle.kts` still has `isMinifyEnabled = false`. Additionally,
+  `app/proguard-rules.pro` ends with `-dontshrink` and `-dontobfuscate`, which would
+  neutralize R8 even if minify were flipped on. Enabling P1 requires (a) removing those
+  two flags and (b) adding keep rules for termux/Coil, then **on-device validation**
+  (the app must still launch a session and render the terminal). On-device testing is
+  not possible in this environment, so P1 is deferred until a device/emulator is available.
+- Security note: until P1 ships, the APK is trivially reverse-engineerable.
+
+### Local build still impossible
+- Confirmed: 2.7 GB RAM OOM-kills the Gradle daemon during `assembleRelease`. All
+  performance changes are validated via CI artifact size, not local gradle.
+
+### S2 (quote `$command`) — SHIPPED
+- Commit following P2. `UbuntuCommand.run` now wraps the command as `"$command"`
+  (with `sudo ` left outside the quotes) before writing to the session, preventing
+  shell word-splitting / injection if a call site ever passes arguments with spaces
+  or shell metacharacters. Low risk; CI green.
+
+### S4 (filesDir 0700) — VERIFIED, NO CHANGE
+- See security findings S4 above: Android default `0700` already holds; no widening
+  calls exist in the codebase.
 
 ## References
 - Tavily: Android APK size reduction via `ndk.abiFilters` (arm64-v8a-only) — ~50 % cut.

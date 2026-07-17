@@ -60,7 +60,7 @@ object UbuntuCommand {
                 }
                 val prefix = if (uid == "0") "" else "sudo "
 
-                val wrapped = "echo $marker; ${prefix}$command; echo $marker\n"
+                val wrapped = "echo $marker; ${prefix}\"$command\"; echo $marker\n"
 
                 session.write(wrapped)
 
