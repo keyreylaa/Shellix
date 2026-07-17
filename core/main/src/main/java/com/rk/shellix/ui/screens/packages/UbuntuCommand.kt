@@ -40,13 +40,16 @@ object UbuntuCommand {
 
                 // Detect whether we are already root so we don't blindly prefix sudo
                 // (sudo may be absent on a minimal rootfs). Runs as the session user.
+                // Skip marker occurrence in the echoed command line (index 0),
+                // capture between output markers (indices 1 and 2).
                 session.write("echo $uidMarker; id -u; echo $uidMarker\n")
                 val uidStart = System.currentTimeMillis()
                 var uid = "0"
                 while (System.currentTimeMillis() - uidStart < TIMEOUT_MS) {
                     delay(POLL_MS)
                     val now = emulator.getScreen().getTranscriptText()
-                    val i1 = now.indexOf(uidMarker)
+                    val i0 = now.indexOf(uidMarker)
+                    val i1 = now.indexOf(uidMarker, i0 + uidMarker.length)
                     val i2 = now.indexOf(uidMarker, i1 + uidMarker.length)
                     if (i1 >= 0 && i2 > i1) {
                         uid = now.substring(i1 + uidMarker.length, i2)
@@ -65,10 +68,11 @@ object UbuntuCommand {
                 while (System.currentTimeMillis() - start < TIMEOUT_MS) {
                     delay(POLL_MS)
                     val now = emulator.getScreen().getTranscriptText()
-                    val idx1 = now.indexOf(marker)
-                    val idx2 = now.indexOf(marker, idx1 + marker.length)
-                    if (idx1 >= 0 && idx2 > idx1) {
-                        val between = now.substring(idx1 + marker.length, idx2)
+                    val m0 = now.indexOf(marker)
+                    val m1 = now.indexOf(marker, m0 + marker.length)
+                    val m2 = now.indexOf(marker, m1 + marker.length)
+                    if (m1 >= 0 && m2 > m1) {
+                        val between = now.substring(m1 + marker.length, m2)
                             .removePrefix("\r\n").removePrefix("\n")
                         return@withContext Result.success(between)
                     }

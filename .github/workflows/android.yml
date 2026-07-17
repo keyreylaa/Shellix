@@ -1,4 +1,4 @@
-name: Android CI
+name: Android CI — Build APK only
 on:
   push:
     branches:
@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-release:
-    name: Build Release
+    name: Build Release APK
     runs-on: ubuntu-latest
 
     steps:

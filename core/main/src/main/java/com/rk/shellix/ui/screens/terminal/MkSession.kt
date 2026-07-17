@@ -122,9 +122,6 @@ object MkSession {
                  env.add("SETUP_SCRIPT=${localBinDir().child("setup-user.sh").absolutePath}")
                  Settings.setup_user_done = true
              }
-                 env.add("SETUP_SCRIPT=${localBinDir().child("setup-user.sh").absolutePath}")
-                 Settings.setup_user_done = true
-             }
 
             val args: Array<String>
             val shell = if (pendingCommand == null) {

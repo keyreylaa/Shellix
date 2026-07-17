@@ -80,9 +80,11 @@ fun TerminalScreen(
     }
     
     // Update virtual keys when they are available
-    terminalViewModel.virtualKeysView?.apply {
-        virtualKeysViewClient = terminalViewModel.terminalView?.mTermSession?.let { VirtualKeysListener(it) }
-        buttonTextColor = TerminalUtils.getViewColor()
+    SideEffect {
+        terminalViewModel.virtualKeysView?.apply {
+            virtualKeysViewClient = terminalViewModel.terminalView?.mTermSession?.let { VirtualKeysListener(it) }
+            buttonTextColor = TerminalUtils.getViewColor()
+        }
     }
 
     BackHandler(enabled = drawerState.isOpen) {
@@ -132,7 +134,7 @@ fun TerminalScreen(
         }
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            BackgroundImage(terminalViewModel)
+            key(terminalViewModel.bitmap) { BackgroundImage(terminalViewModel) }
             
             Column {
                 if (terminalViewModel.showToolbar) {

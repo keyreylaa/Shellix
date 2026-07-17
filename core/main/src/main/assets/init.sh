@@ -46,6 +46,12 @@ if [[ ! -f /linkerconfig/ld.config.txt ]];then
     touch /linkerconfig/ld.config.txt
 fi
 
+# Re-check default user (setup-user.sh may have run above)
+if [ -f /etc/shellix_default_user ]; then
+  DEFAULT_USER=$(cat /etc/shellix_default_user)
+  if id "$DEFAULT_USER" >/dev/null 2>&1; then exec su - "$DEFAULT_USER"; fi
+fi
+
 if [ "$#" -eq 0 ]; then
     source /etc/profile
 export PS1='\[\033[01;32m\]\u@shellix\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '

@@ -6,10 +6,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -113,7 +116,7 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
                 query = it
                 if (searchMode == SearchMode.APT) searchApt()
             },
-            label = { Text("Search installed / apt") },
+            label = { Text("Search packages") },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(8.dp))
@@ -160,21 +163,43 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
         val filtered = if (searchMode == SearchMode.APT) {
-            aptResults.filter { it.name.contains(query.trim(), ignoreCase = true) }
+            aptResults
         } else {
-            packages.filter { it.name.contains(query.trim(), ignoreCase = true) }
+            packages
+        }.let { list ->
+            val q = query.trim()
+            if (q.isEmpty()) list else list.filter { it.name.contains(q, ignoreCase = true) }
         }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             items(filtered) { pkg ->
-                Card(Modifier.fillMaxWidth().clickable { selected = pkg }) {
+                Card(
+                    Modifier.fillMaxWidth().clickable { selected = pkg },
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
                     Column(Modifier.padding(12.dp)) {
-                        Text(pkg.name, style = MaterialTheme.typography.titleSmall)
-                        Text("v${pkg.version}", style = MaterialTheme.typography.bodySmall)
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(pkg.name, style = MaterialTheme.typography.titleSmall)
+                            if (pkg.version.isNotEmpty())
+                                Text("v${pkg.version}", style = MaterialTheme.typography.labelSmall)
+                        }
                         if (pkg.section.isNotEmpty())
                             Text(
                                 pkg.section,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.secondary
+                            )
+                        if (pkg.desc.isNotEmpty())
+                            Text(
+                                pkg.desc,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                     }
                 }
@@ -182,23 +207,107 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
         }
     }
 
+    // Detail bottom sheet — like a video playlist item
     selected?.let { pkg ->
         ModalBottomSheet(onDismissRequest = { selected = null }) {
-            Column(Modifier.padding(16.dp).fillMaxWidth()) {
-                Text(pkg.name, style = MaterialTheme.typography.titleMedium)
-                Text("Version: ${pkg.version}")
-                if (pkg.section.isNotEmpty()) Text("Section: ${pkg.section}")
-                Text(pkg.desc)
-                Spacer(Modifier.height(12.dp))
-                Button(onClick = {
-                    scope.launch {
-                        busy = true
-                        val sim = UbuntuCommand.run(sessionBinder, "apt-get remove -y --simulate ${pkg.name}")
-                        busy = false
-                        sim.onSuccess { confirmText = it; confirmInstall = false }
-                            .onFailure { toast(it.message ?: "sim failed") }
+            Column(
+                Modifier
+                    .padding(start = 20.dp, end = 20.dp, bottom = 32.dp)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(pkg.name, style = MaterialTheme.typography.headlineSmall)
+                    IconButton(onClick = { selected = null }) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
                     }
-                }) { Text("Uninstall") }
+                }
+
+                if (pkg.section.isNotEmpty()) {
+                    Spacer(Modifier.height(4.dp))
+                    AssistChip(
+                        onClick = {},
+                        label = { Text(pkg.section, style = MaterialTheme.typography.labelSmall) }
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(8.dp))
+
+                Text("Description", style = MaterialTheme.typography.titleMedium)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    pkg.desc.ifEmpty { "No description available" },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                if (pkg.version.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(8.dp))
+                    Row {
+                        Text("Version: ", style = MaterialTheme.typography.labelMedium)
+                        Text(pkg.version, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (searchMode == SearchMode.APT) {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    busy = true
+                                    val sim = UbuntuCommand.run(
+                                        sessionBinder,
+                                        "apt-get install -y --simulate ${pkg.name}"
+                                    )
+                                    busy = false
+                                    sim.onSuccess { confirmText = it }
+                                        .onFailure { toast(it.message ?: "sim failed") }
+                                    confirmInstall = true
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Install")
+                        }
+                    }
+                    if (searchMode == SearchMode.INSTALLED) {
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    busy = true
+                                    val sim = UbuntuCommand.run(
+                                        sessionBinder,
+                                        "apt-get remove -y --simulate ${pkg.name}"
+                                    )
+                                    busy = false
+                                    sim.onSuccess { confirmText = it; confirmInstall = false }
+                                        .onFailure { toast(it.message ?: "sim failed") }
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Uninstall")
+                        }
+                    }
+                }
             }
         }
     }
@@ -207,7 +316,11 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
         AlertDialog(
             onDismissRequest = { confirmText = null },
             title = { Text(if (confirmInstall) "Install these?" else "Remove these?") },
-            text = { Text(txt.take(2000)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(txt.take(2000))
+                }
+            },
             confirmButton = {
                 Button(onClick = {
                     val cmd = if (confirmInstall)
@@ -224,7 +337,11 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
                     }
                 }) { Text("Confirm") }
             },
-            dismissButton = { TextButton(onClick = { confirmText = null; confirmInstall = false }) { Text("Cancel") } }
+            dismissButton = {
+                TextButton(onClick = { confirmText = null; confirmInstall = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 

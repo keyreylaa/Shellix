@@ -1,5 +1,6 @@
 package com.rk.shellix.ui.screens.customization
 
+import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Typeface
@@ -32,9 +33,11 @@ import com.rk.components.compose.preferences.switch.PreferenceSwitch
 import com.rk.libcommons.*
 import com.rk.resources.strings
 import com.rk.settings.Settings
+import com.rk.shellix.ui.activities.terminal.MainActivity
 import com.rk.shellix.ui.activities.terminal.MainViewModel
 import com.rk.shellix.ui.components.SettingsToggle
 import com.rk.shellix.ui.screens.terminal.*
+import com.rk.shellix.ui.theme.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -90,6 +93,66 @@ fun Customization(
         PreferenceGroup {
             SettingsToggle(label = stringResource(strings.bell), description = stringResource(strings.bell_desc), showSwitch = true, default = Settings.bell, sideEffect = { Settings.bell = it })
             SettingsToggle(label = stringResource(strings.vibrate), description = stringResource(strings.vibrate_desc), showSwitch = true, default = Settings.vibrate, sideEffect = { Settings.vibrate = it })
+        }
+
+        PreferenceGroup(heading = "App Theme") {
+            val currentMode = remember { Settings.default_night_mode }
+            val modeNames = listOf("Light", "System", "Dark")
+            val modeValues = listOf(
+                androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO,
+                androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM,
+                androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
+            )
+            Text(
+                "Night mode: ${modeNames[modeValues.indexOf(currentMode).coerceAtLeast(0)]}",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            )
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                modeNames.forEachIndexed { i, name ->
+                    FilterChip(
+                        selected = currentMode == modeValues[i],
+                        onClick = {
+                            Settings.default_night_mode = modeValues[i]
+                            navController.context?.let { ctx ->
+                                val act = (ctx as? android.app.Activity)
+                                if (act != null) ThemeManager.apply(act)
+                            }
+                        },
+                        label = { Text(name) }
+                    )
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            SettingsToggle(
+                label = "OLED mode",
+                description = "Use true black background in dark mode",
+                showSwitch = true,
+                default = Settings.amoled,
+                sideEffect = {
+                    Settings.amoled = it
+                    navController.context?.let { ctx ->
+                        val act = (ctx as? android.app.Activity)
+                        if (act != null) ThemeManager.apply(act)
+                    }
+                }
+            )
+            SettingsToggle(
+                label = "Material You (Monet)",
+                description = "Use dynamic color from wallpaper (Android 12+)",
+                showSwitch = true,
+                default = Settings.monet,
+                sideEffect = {
+                    Settings.monet = it
+                    navController.context?.let { ctx ->
+                        val act = (ctx as? android.app.Activity)
+                        if (act != null) ThemeManager.apply(act)
+                    }
+                }
+            )
         }
 
         PreferenceGroup {
