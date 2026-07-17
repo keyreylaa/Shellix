@@ -7,10 +7,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavHostController
+import com.rk.libcommons.child
 import com.rk.libcommons.toast
 import com.rk.shellix.ui.activities.terminal.MainActivity
-import com.rk.shellix.ui.screens.terminal.Settings
+import com.rk.settings.Settings
 import com.rk.shellix.ui.screens.terminal.TerminalScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

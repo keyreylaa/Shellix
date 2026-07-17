@@ -17,7 +17,7 @@ val gitCommitDate: Provider<String> =
 
 
 android {
-    namespace = "com.shellix.terminal"
+    namespace = "com.rk.shellix"
     android.buildFeatures.buildConfig = true
     compileSdk = 37
 

@@ -22,7 +22,6 @@ import android.util.Log
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okio.Buffer
-import okio.Okio
 import okio.Sink
 import java.io.File
 import java.io.FileOutputStream
@@ -95,7 +94,7 @@ fun SetupScreen(
                             statusText = "Downloading... ${written / 1024} KB"
                         }
                     }
-                    Okio.buffer(sink).use { out ->
+                    sink.buffer().use { out ->
                         body.source().use { src -> out.writeAll(src) }
                     }
                 }
@@ -201,7 +200,7 @@ private class ProgressSink(
     private val onProgress: (Long) -> Unit
 ) : Sink {
     private var written = 0L
-    private val buffered = Okio.buffer(Okio.sink(delegate))
+    private val buffered = delegate.sink().buffer()
 
     override fun write(source: Buffer, byteCount: Long) {
         buffered.write(source, byteCount)

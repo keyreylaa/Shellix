@@ -6,6 +6,7 @@ import com.rk.libcommons.createFileIfNot
 import com.rk.libcommons.localBinDir
 import com.rk.libcommons.localDir
 import com.rk.libcommons.localLibDir
+import com.rk.libcommons.ubuntuHomeDir
 import com.rk.shellix.App.Companion.getTempDir
 import com.rk.shellix.BuildConfig
 import com.rk.settings.Settings
