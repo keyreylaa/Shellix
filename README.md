@@ -1,5 +1,14 @@
 # Shellix
 
+[![Build](https://github.com/keyreylaa/Shellix/actions/workflows/android.yml/badge.svg)](https://github.com/keyreylaa/Shellix/actions)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/keyreylaa/Shellix/blob/master/LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Android-green.svg)](https://github.com/keyreylaa/Shellix)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/keyreylaa/Shellix/releases)
+[![PRoot](https://img.shields.io/badge/sandbox-PRoot-orange.svg)](https://github.com/keyreylaa/Shellix)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20Noble-E95420.svg)](https://github.com/keyreylaa/Shellix)
+
+A Material 3 terminal emulator for Android that boots a real Ubuntu 24.04 Noble environment via PRoot.
+
 **Shellix** is a sleek, Material 3 terminal emulator for Android that boots a real **Ubuntu 24.04 (Noble Numbat)** Linux environment via PRoot — not just a plain Android shell. Built on Termux's battle-tested TerminalView.
 
 > Note: Shellix runs Ubuntu over PRoot on top of the Android kernel. It is ideal for learning Linux, shell scripting, and light development. Heavy compilation, GPU workloads, and low-port networking need a rooted device or a VPS.
