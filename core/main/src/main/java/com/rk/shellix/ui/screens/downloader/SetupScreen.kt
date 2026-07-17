@@ -18,12 +18,18 @@ import com.rk.shellix.ui.screens.terminal.TerminalScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import android.system.Os
 import android.util.Log
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okio.*
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.IOException
 import java.security.MessageDigest
 
 @Composable
@@ -139,7 +145,7 @@ fun SetupScreen(
                 }
 
                 if (!extractOk) {
-                    throw java.io.IOException("Failed to extract ${outputFile.name}")
+                    throw java.io.IOException("Failed to extract ${outputFile.name}. Ensure the downloaded archive is complete and the device has free storage.")
                 }
 
                 withContext(Dispatchers.Main) {
@@ -182,15 +188,130 @@ fun SetupScreen(
     }
 }
 
-/** Extracts a .tar.gz into [dest]. Returns true on success. */
+/** Extracts a .tar.gz into [dest] using a pure-Kotlin (commons-compress) reader.
+ *  Returns true on success. The [hardDeref] parameter is kept for signature
+ *  compatibility but is no longer needed since hardlinks are emulated by copy. */
+@Suppress("UNUSED_PARAMETER")
 private fun extractTar(file: File, dest: File, hardDeref: Boolean): Boolean {
-    val cmd = mutableListOf("tar", "-xzf", file.absolutePath, "-C", dest.absolutePath)
-    if (hardDeref) cmd.add("--hard-dereference")
-    return runCatching {
-        val process = ProcessBuilder(cmd).redirectErrorStream(true).start()
-        process.inputStream.bufferedReader().use { it.readText() }
-        process.waitFor() == 0
-    }.getOrDefault(false)
+    dest.mkdirs()
+    val destCanonical = dest.canonicalPath
+    val pendingHardlinks = mutableListOf<Pair<TarArchiveEntry, File>>()
+
+    try {
+        GzipCompressorInputStream(FileInputStream(file)).use { gzipIn ->
+            TarArchiveInputStream(gzipIn).use { tarIn ->
+                var entry = tarIn.nextEntry
+                while (entry != null) {
+                    val name = entry.name.removePrefix("./")
+                    if (name.isEmpty() || name == ".") {
+                        entry = tarIn.nextEntry
+                        continue
+                    }
+
+                    val candidate = File(dest, name)
+                    val candidateCanonical = candidate.canonicalPath
+                    val isInside = candidateCanonical == destCanonical ||
+                            candidateCanonical.startsWith(destCanonical + File.separator)
+                    if (!isInside) {
+                        Log.w("RootfsSource", "Skipping path traversal entry: ${entry.name}")
+                        entry = tarIn.nextEntry
+                        continue
+                    }
+
+                    when {
+                        entry.isDirectory -> {
+                            candidate.mkdirs()
+                        }
+                        entry.isSymbolicLink -> {
+                            createSymlink(entry.linkName, candidate.absolutePath)
+                        }
+                        entry.isLink -> {
+                            // Hardlink: resolve the link target which should already be
+                            // extracted; if not, defer to a second pass.
+                            val target = File(dest, entry.linkName)
+                            if (target.exists()) {
+                                copyRegular(tarIn, candidate, entry)
+                            } else {
+                                pendingHardlinks.add(entry to candidate)
+                            }
+                        }
+                        else -> {
+                            copyRegular(tarIn, candidate, entry)
+                        }
+                    }
+                    entry = tarIn.nextEntry
+                }
+            }
+        }
+
+        // Second pass for hardlinks whose target was extracted after them.
+        for ((entry, candidate) in pendingHardlinks) {
+            val target = File(dest, entry.linkName)
+            if (target.exists()) {
+                copyFileBytes(target, candidate)
+            } else {
+                Log.w("RootfsSource", "Hardlink target missing, creating empty file: ${entry.name} -> ${entry.linkName}")
+                candidate.parentFile?.mkdirs()
+                candidate.createNewFile()
+            }
+        }
+        return true
+    } catch (e: IOException) {
+        Log.e("RootfsSource", "extractTar failed: ${e.message}", e)
+        return false
+    }
+}
+
+/** Copies the current tar entry's bytes into [candidate]. */
+private fun copyRegular(tarIn: TarArchiveInputStream, candidate: File, entry: TarArchiveEntry) {
+    candidate.parentFile?.mkdirs()
+    FileOutputStream(candidate).use { out ->
+        val buffer = ByteArray(8192)
+        var read: Int
+        while (tarIn.read(buffer).also { read = it } != -1) {
+            out.write(buffer, 0, read)
+        }
+    }
+    try {
+        val mode = entry.mode
+        candidate.setExecutable((mode and 0b001) != 0 || (mode and 0b010) != 0)
+    } catch (_: Exception) {
+        // best-effort
+    }
+}
+
+/** Copies an already-extracted file's bytes into [candidate] (hardlink emulation). */
+private fun copyFileBytes(source: File, candidate: File) {
+    candidate.parentFile?.mkdirs()
+    source.inputStream().use { input ->
+        FileOutputStream(candidate).use { out ->
+            val buffer = ByteArray(8192)
+            var read: Int
+            while (input.read(buffer).also { read = it } != -1) {
+                out.write(buffer, 0, read)
+            }
+        }
+    }
+    try {
+        candidate.setExecutable(source.canExecute())
+    } catch (_: Exception) {
+        // best-effort
+    }
+}
+
+/** Creates a symlink, preferring android.system.Os, falling back to `ln -s`. */
+private fun createSymlink(linkName: String?, targetPath: String) {
+    if (linkName == null) return
+    try {
+        File(targetPath).parentFile?.mkdirs()
+        Os.symlink(linkName, targetPath)
+    } catch (_: Exception) {
+        try {
+            Runtime.getRuntime().exec(arrayOf("ln", "-s", linkName, targetPath))
+        } catch (e: Exception) {
+            Log.w("RootfsSource", "Failed to create symlink $targetPath -> $linkName: ${e.message}")
+        }
+    }
 }
 
 /** A sink that reports bytes written. */
