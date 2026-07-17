@@ -1,10 +1,16 @@
 package com.rk.shellix.ui.screens.terminal
 
 import android.content.Context
+import android.graphics.ImageDecoder
+import android.os.Build
+import android.os.ParcelFileDescriptor
+import androidx.compose.ui.graphics.asImageBitmap
 import com.rk.libcommons.child
 import com.rk.libcommons.createFileIfNot
 import com.rk.libcommons.localDir
 import com.rk.shellix.ui.screens.terminal.TerminalColorSchemes.DEFAULT
+import java.io.File
+import java.io.IOException
 
 object TerminalThemes {
     /**
@@ -24,4 +30,22 @@ object TerminalThemes {
 
     fun applyDracula(context: Context) = applyScheme(context, TerminalColorSchemes.DRACULA)
     fun applyDefault(context: Context) = applyScheme(context, DEFAULT)
+
+    /**
+     * Decode [file] to an [androidx.compose.ui.graphics.ImageBitmap] using
+     * ImageDecoder so every Android-native format (HEIC/WebP/AVIF on supported OS
+     * versions) loads. Falls back to BitmapFactory below API 28.
+     */
+    fun decodeBitmap(file: File): androidx.compose.ui.graphics.ImageBitmap {
+        val src = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(pfd)) { decoder, _, _ ->
+                decoder.isMutableRequired = true
+            }
+        } else {
+            android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+                ?: throw IOException("Failed to decode ${file.name}")
+        }
+        return src.asImageBitmap()
+    }
 }

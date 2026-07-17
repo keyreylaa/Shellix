@@ -19,12 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.palette.graphics.Palette
@@ -322,13 +320,11 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
                     val name = context.getFileNameFromUri(it).toString()
                     Settings.custom_background_name = name
 
-                    // Decode once via Coil so all Android-native formats load, then
-                    // derive the text-color hint from the palette. Hardware bitmaps
-                    // are disabled because Palette must read the pixels.
-                    val result = context.imageLoader.execute(
-                        ImageRequest.Builder(context).data(imageFile).allowHardware(false).build()
-                    )
-                    val bmp = if (result is coil.request.SuccessResult) result.image.toBitmap() else null
+                    // Decode once via ImageDecoder (all Android-native formats) to
+                    // derive the text-color hint from the palette.
+                    val bmp = try {
+                        TerminalThemes.decodeBitmap(imageFile).asAndroidBitmap()
+                    } catch (e: Exception) { null }
                     if (bmp == null) {
                         withContext(Dispatchers.Main) { toast("Failed to decode image (unsupported/corrupt format)") }
                         return@launch

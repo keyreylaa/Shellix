@@ -106,7 +106,6 @@ class TerminalViewModel : ViewModel() {
 
         currentBinder?.allSessions()?.forEach { session ->
             session.emulator?.mColors?.updateWith(props)
-            session.emulator?.onColorsChanged()
             terminalView?.onScreenUpdated()
         }
         terminalView?.onScreenUpdated()

@@ -4,10 +4,8 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.BlurMaskFilter
 import android.os.Build
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
 import androidx.activity.compose.BackHandler
+import coil.compose.AsyncImage
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -206,46 +204,56 @@ private fun BackgroundImage(viewModel: TerminalViewModel) {
     val file = viewModel.bitmapFile
     var resolved by remember(file) { mutableStateOf<ImageBitmap?>(null) }
 
-    // Decode via Coil so every Android-native format (PNG/JPG/WebP/GIF/HEIC on
-    // API28+/AVIF on API31+) loads, regardless of API level.
+    // For the API <31 blur fallback we need an actual Bitmap. Decode it here with
+    // ImageDecoder (handles HEIC/WebP/AVIF on supported OS versions) so every
+    // Android-native format works. The on-screen render below uses AsyncImage
+    // (Coil) which decodes all formats independently.
     LaunchedEffect(file) {
         if (file == null) { resolved = null; return@LaunchedEffect }
         withContext(Dispatchers.IO) {
             val bmp = try {
-                val res = context.imageLoader.execute(ImageRequest.Builder(context).data(file).build())
-                if (res is coil.request.SuccessResult) res.image.asImageBitmap() else null
+                TerminalThemes.decodeBitmap(file)
             } catch (e: Exception) { null }
             withContext(Dispatchers.Main) { resolved = bmp }
         }
     }
 
-    resolved?.let { bitmap ->
+    file?.let { f ->
         // Modifier.blur() relies on RenderEffect, which only exists on API 31+.
         // On older Android it silently does nothing, so fall back to pre-blurring
         // the Bitmap itself with BlurMaskFilter (all API levels).
         val renderBitmap = if (viewModel.backgroundBlur > 0f && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-            remember(bitmap, viewModel.backgroundBlur) {
-                blurBitmap(bitmap, viewModel.backgroundBlur)
+            resolved?.let { bmp ->
+                remember(bmp, viewModel.backgroundBlur) { blurBitmap(bmp, viewModel.backgroundBlur) }
             }
         } else {
-            bitmap
+            null
         }
 
-        Image(
-            bitmap = renderBitmap,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .alpha(viewModel.wallAlpha)
-                .let {
-                    if (viewModel.backgroundBlur > 0f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        it.blur(viewModel.backgroundBlur.dp)
-                    } else {
-                        it
+        if (renderBitmap != null) {
+            Image(
+                bitmap = renderBitmap,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(viewModel.wallAlpha)
+            )
+        } else {
+            AsyncImage(
+                model = f,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(viewModel.wallAlpha)
+                    .let {
+                        if (viewModel.backgroundBlur > 0f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            it.blur(viewModel.backgroundBlur.dp)
+                        } else it
                     }
-                }
-        )
+            )
+        }
     }
 }
 
