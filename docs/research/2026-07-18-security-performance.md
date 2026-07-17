@@ -142,6 +142,27 @@ android.enableR8.fullMode=false
 
 ## Validation results (2026-07-17/18)
 
+### P1 (minify + R8) — SHIPPED (build-only validated, ON-DEVICE PENDING)
+- `app/build.gradle.kts` release: `isMinifyEnabled = true`, `isShrinkResources = true`,
+  `isCrunchPngs = true`. `app/proguard-rules.pro` no longer has `-dontshrink`/`-dontobfuscate`;
+  added explicit keep rules for `com.termux.**`, `coil.**`/`coil3.**`, `kotlinx.coroutines.**`,
+  `androidx.compose.**` (all reached via reflection / stable API).
+- **CI build passes**, but this environment has no device/emulator, so launch-time
+  behaviour (terminal session, Ubuntu PRoot boot) is UNVERIFIED. **User must install
+  the CI release APK on a real arm64 device and confirm:** (1) app opens, (2) a terminal
+  session renders, (3) Ubuntu setup/boot works, (4) background image + font load. If it
+  crashes, capture the logcat and report — likely a missing keep rule.
+
+### P3 (R8 full mode) — SHIPPED (with P1)
+- `gradle.properties`: `android.enableR8.fullMode=true`. More aggressive optimization;
+  safe only because the termux/Coil/Compose keep rules from P1 are in place. Same
+  on-device validation requirement as P1.
+
+### P4 (resourceConfigs = en) — SHIPPED
+- `app/build.gradle.kts` defaultConfig: `resourceConfigs += listOf("en")`. Drops the
+  bundled `ar`/`zh` translations in `core/resources` from the APK (UI is English-only;
+  other locales fall back to English). No device risk.
+
 ### P2 (abiFilters = arm64-v8a) — SHIPPED, CI GREEN
 - Commit `4f78479`. Both Verify + Android CI pass.
 - Release APK artifact size: **17.7 MB** (arm64-v8a only). The pre-P2 APK shipped 4

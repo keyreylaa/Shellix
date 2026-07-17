@@ -224,8 +224,33 @@
 -keepnames class com.rk.shellix.BaseActivity {*;}
 
 -dontwarn sun.security.x509.X509Key
--dontobfuscate
--dontshrink
+
+# ---------------------------------------------------------------------------
+# Shellix release hardening (P1/P3): enable R8 shrink + obfuscate.
+# Removed the old `-dontshrink` / `-dontobfuscate` flags so R8 can actually
+# tree-shake and obfuscate. Everything that is reached via reflection or that
+# must keep stable names is explicitly kept below.
+# ---------------------------------------------------------------------------
+
+# termux terminal engine is accessed through reflection / stable public API.
+-keep class com.termux.** { *; }
+-dontwarn com.termux.**
+
+# Coil image loading (used by AsyncImage / palette loader).
+-keep class coil.** { *; }
+-keep class coil3.** { *; }
+-dontwarn coil.**
+-dontwarn coil3.**
+
+# Kotlin coroutines (state machines rely on stable internal names).
+-keep class kotlinx.coroutines.** { *; }
+-dontwarn kotlinx.coroutines.**
+
+# Keep Compose runtime + material stable (Compose is shrinker-friendly but the
+# compiler-generated Composable keys must not be renamed/removed).
+-keep class androidx.compose.** { *; }
+-dontwarn androidx.compose.**
+
 -keepattributes *Annotation*
 
 
