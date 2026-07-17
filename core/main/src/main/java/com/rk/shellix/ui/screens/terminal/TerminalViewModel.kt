@@ -4,10 +4,10 @@ import android.content.Context
 import android.graphics.Typeface
 import android.util.TypedValue
 import androidx.compose.runtime.getValue
+import java.io.File
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import com.google.android.material.R
 import com.rk.settings.Settings
@@ -28,7 +28,7 @@ class TerminalViewModel : ViewModel() {
     fun setTerminalView(view: TerminalView?) { terminalViewRef = WeakReference(view) }
     fun setVirtualKeysView(view: VirtualKeysView?) { virtualKeysViewRef = WeakReference(view) }
 
-    var bitmap by mutableStateOf<ImageBitmap?>(null)
+    var bitmapFile by mutableStateOf<File?>(null)
     var wallAlpha by mutableFloatStateOf(Settings.wallTransparency)
     var backgroundBlur by mutableFloatStateOf(Settings.background_blur)
 

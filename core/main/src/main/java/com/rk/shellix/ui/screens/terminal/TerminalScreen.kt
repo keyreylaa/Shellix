@@ -2,9 +2,10 @@ package com.rk.shellix.ui.screens.terminal
 
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.BlurMaskFilter
 import android.os.Build
+import coil.imageLoader
+import coil.request.ImageRequest
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -73,19 +74,13 @@ fun TerminalScreen(
     val sessionBinder = mainViewModel.sessionBinder
 
     LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
-            val decoded = if (context.filesDir.child("background").exists().not()) {
-                null
-            } else if (terminalViewModel.bitmap == null) {
-                BitmapFactory.decodeFile(context.filesDir.child("background").absolutePath)?.asImageBitmap()
-            } else {
-                null
-            }
-            withContext(Dispatchers.Main) {
-                if (context.filesDir.child("background").exists().not()) {
-                    TerminalUtils.darkText.value = !isDarkMode
-                }
-                decoded?.let { terminalViewModel.bitmap = it }
+        val bgFile = context.filesDir.child("background")
+        withContext(Dispatchers.Main) {
+            if (bgFile.exists().not()) {
+                TerminalUtils.darkText.value = !isDarkMode
+                terminalViewModel.bitmapFile = null
+            } else if (terminalViewModel.bitmapFile == null) {
+                terminalViewModel.bitmapFile = bgFile
             }
         }
     }
@@ -144,11 +139,11 @@ fun TerminalScreen(
             )
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+            Box(modifier = Modifier.fillMaxSize()) {
             // Background drawn first => naturally behind the terminal Column (Compose
             // paints in declaration order). No zIndex(-1f): on API <31 a negative zIndex
             // can get clipped and the image disappears entirely.
-            key(terminalViewModel.bitmap) { BackgroundImage(terminalViewModel) }
+            key(terminalViewModel.bitmapFile) { BackgroundImage(terminalViewModel) }
 
             Column {
                 if (terminalViewModel.showToolbar) {
@@ -206,10 +201,27 @@ fun TerminalScreen(
 
 @Composable
 private fun BackgroundImage(viewModel: TerminalViewModel) {
-    viewModel.bitmap?.let { bitmap ->
+    val context = LocalContext.current
+    val file = viewModel.bitmapFile
+    var resolved by remember(file) { mutableStateOf<ImageBitmap?>(null) }
+
+    // Decode via Coil so every Android-native format (PNG/JPG/WebP/GIF/HEIC on
+    // API28+/AVIF on API31+) loads, regardless of API level.
+    LaunchedEffect(file) {
+        if (file == null) { resolved = null; return@LaunchedEffect }
+        withContext(Dispatchers.IO) {
+            val bmp = try {
+                ImageLoader(context).execute(ImageRequest.Builder(context).data(file).build())
+                    .image?.asImageBitmap()
+            } catch (e: Exception) { null }
+            withContext(Dispatchers.Main) { resolved = bmp }
+        }
+    }
+
+    resolved?.let { bitmap ->
         // Modifier.blur() relies on RenderEffect, which only exists on API 31+.
-        // On older Android it silently does nothing (or drops the layer), so fall
-        // back to pre-blurring the Bitmap itself with BlurMaskFilter (all API levels).
+        // On older Android it silently does nothing, so fall back to pre-blurring
+        // the Bitmap itself with BlurMaskFilter (all API levels).
         val renderBitmap = if (viewModel.backgroundBlur > 0f && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             remember(bitmap, viewModel.backgroundBlur) {
                 blurBitmap(bitmap, viewModel.backgroundBlur)

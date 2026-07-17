@@ -84,6 +84,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.palette)
     implementation(libs.okhttp)
+    implementation(libs.coil.compose)
 
     implementation(project(":core:resources"))
     implementation(project(":core:components"))

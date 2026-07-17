@@ -20,6 +20,12 @@ if [ ! -s /etc/resolv.conf ]; then
     echo "nameserver 8.8.8.8" > /etc/resolv.conf
 fi
 
+# Ensure 'localhost' resolves so sudo stops warning
+# "unable to resolve host localhost".
+if ! grep -q "127.0.0.1[[:space:]].*localhost" /etc/hosts 2>/dev/null; then
+    echo "127.0.0.1 localhost" >> /etc/hosts
+fi
+
 # Run first-boot user setup if creds were provided by the app.
 # setup-user.sh is copied into $BIN (local/bin) by the app alongside init.
 if [ -n "$SETUP_USER" ] && [ -n "$SETUP_PASS" ] && [ -n "$SETUP_SCRIPT" ] && [ ! -f /etc/shellix_default_user ]; then
