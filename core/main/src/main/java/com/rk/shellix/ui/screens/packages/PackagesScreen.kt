@@ -2,6 +2,7 @@ package com.rk.shellix.ui.screens.packages
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 
 private data class Pkg(val name: String, val version: String, val desc: String)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
     val scope = rememberCoroutineScope()

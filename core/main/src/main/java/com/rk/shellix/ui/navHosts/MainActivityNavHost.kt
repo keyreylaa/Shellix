@@ -18,6 +18,7 @@ import com.rk.shellix.ui.routes.MainActivityRoutes
 import com.rk.shellix.ui.screens.customization.Customization
 import com.rk.shellix.ui.screens.downloader.SetupScreen
 import com.rk.shellix.ui.screens.settings.Settings
+import com.rk.shellix.ui.screens.packages.PackagesScreen
 import com.rk.shellix.ui.screens.terminal.Rootfs
 import com.rk.shellix.ui.screens.terminal.TerminalScreen
 

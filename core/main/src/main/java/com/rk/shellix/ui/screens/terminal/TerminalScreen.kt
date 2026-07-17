@@ -108,6 +108,7 @@ fun TerminalScreen(
                 val id = binder?.getService()?.currentSession?.value?.first
                 val session = id?.let { binder.getSession(it) }
                 session?.emulator?.paste("\u000c")
+                Unit
             }
 
             TerminalDrawer(
