@@ -40,7 +40,11 @@ android {
                 
                 storePassword = properties["storePassword"] as String?
             } else {
-                println("Signing properties file not found at $propertiesFilePath")
+                println("Signing properties file not found at $propertiesFilePath, falling back to debug keystore")
+                storeFile = file(layout.buildDirectory.dir("../testkey.keystore"))
+                storePassword = "testkey"
+                keyAlias = "testkey"
+                keyPassword = "testkey"
             }
         }
         getByName("debug") {
