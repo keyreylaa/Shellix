@@ -41,6 +41,16 @@ Architecture overview is at the bottom of this page so the rationale for each fe
 - The termux `TerminalView` renders via `TerminalSession`/`TerminalRow`; highlighting means either (a) post-processing the transcript in `TerminalBackEnd.onScreenUpdated()` to assign colors, or (b) a lightweight regex pass before `paste`/`write`.
 - Marked **experimental** because it can clash with programs that emit their own ANSI colors. Off by default behind a Settings toggle; report issues at [GitHub Issues](https://github.com/keyreylaa/Shellix/issues).
 
+## Shipped (outside roadmap numbering)
+- **Terminal color presets (live, no restart)**: Nord / One Dark / Tokyo Night / Catppuccin / Dracula / Default, applied globally to all live sessions via `TerminalViewModel.applyColorSchemeGlobally` + `colors.properties`. Picker in Customization → "Terminal Theme" group.
+- **Background all image formats**: `ImageDecoder` + Coil `AsyncImage` decode HEIC/WebP/AVIF on supported OS versions (was `BitmapFactory`-only, silently failed on HEIC/AVIF).
+- **Diagnostics**: `UncaughtExceptionHandler` crash report persisted to `filesDir/crash_report.txt` + in-app ring buffer (2000 lines) + Settings viewer (log list, crash report, plugin-error notify toggle). See `ui/diagnostics/`.
+- **`sudo: unable to resolve host localhost` fix**: `init.sh` appends `127.0.0.1 localhost` to `/etc/hosts`.
+
+## Future research (not yet coded)
+- **Security audit**: review PRoot/seccomp surface, file permissions on extracted rootfs, `init.sh` privilege flow, content:// URI handling in the background picker.
+- **Performance audit**: `compileDebugKotlin` / APK build are slow in CI; the bundled C++/native (PRoot, termux) makes the APK heavy. Investigate trimming unused native code, R8/full-mode, and build caching to speed local + CI builds and shrink the APK.
+
 ---
 
 ## Architecture Context
