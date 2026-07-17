@@ -6,6 +6,7 @@
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/keyreylaa/Shellix/releases)
 [![PRoot](https://img.shields.io/badge/sandbox-PRoot-orange.svg)](https://github.com/keyreylaa/Shellix)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20Noble-E95420.svg)](https://github.com/keyreylaa/Shellix)
+[![Download](https://img.shields.io/badge/download-APK-blue?logo=android)](https://github.com/keyreylaa/Shellix/releases/download/v1.0.0/Shellix-v1.0.0.apk)
 
 A Material 3 terminal emulator for Android that boots a real Ubuntu 24.04 Noble environment via PRoot.
 
@@ -23,10 +24,13 @@ A Material 3 terminal emulator for Android that boots a real Ubuntu 24.04 Noble 
 - **Full storage access** via PRoot bind mounts + `MANAGE_EXTERNAL_STORAGE`.
 
 ## Getting Started
-1. Install the APK (download the latest release from GitHub Releases).
-2. On first launch, Shellix downloads the Ubuntu Noble rootfs (needs internet), extracts it, and opens a **setup wizard**.
-3. Enter a username and password for your sudo user (defaults: user `shellix`, auto-generated password shown once — save it!).
-4. You boot into Ubuntu bash as that user. Run `sudo apt update && sudo apt upgrade` to get started.
+1. **Download the APK**: [Shellix-v1.0.0.apk](https://github.com/keyreylaa/Shellix/releases/download/v1.0.0/Shellix-v1.0.0.apk) (or grab the latest from [GitHub Releases](https://github.com/keyreylaa/Shellix/releases)).
+2. Install it (you may need to allow "Install from unknown sources" in Android settings).
+3. On first launch, Shellix downloads the Ubuntu Noble rootfs (needs internet), extracts it, and opens a **setup wizard**.
+4. Enter a username and password for your sudo user (defaults: user `shellix`, auto-generated password shown once — save it!).
+5. You boot into Ubuntu bash as that user. Run `sudo apt update && sudo apt upgrade` to get started.
+
+> Having trouble? If setup fails to extract the rootfs, the error screen shows a **copyable** message (tap **Copy error** and share it) — usually it means the download was incomplete or storage is full.
 
 ## Build from source
 - Requires Android SDK + JDK 17.
