@@ -22,11 +22,16 @@ fi
 
 # Run first-boot user setup if creds were provided by the app.
 # setup-user.sh is copied into $BIN (local/bin) by the app alongside init.
-if [ -n "$SETUP_USER" ] && [ -n "$SETUP_PASS" ] && [ ! -f /etc/shellix_default_user ]; then
-    if [ -f "$BIN/setup-user.sh" ]; then
-        sh "$BIN/setup-user.sh"
-    elif [ -f "$PREFIX/files/setup-user.sh" ]; then
-        sh "$PREFIX/files/setup-user.sh"
+if [ -n "$SETUP_USER" ] && [ -n "$SETUP_PASS" ] && [ -n "$SETUP_SCRIPT" ] && [ ! -f /etc/shellix_default_user ]; then
+    if [ -f "$SETUP_SCRIPT" ]; then
+        sh "$SETUP_SCRIPT"
+    else
+        # Fallback to old locations
+        if [ -f "$BIN/setup-user.sh" ]; then
+            sh "$BIN/setup-user.sh"
+        elif [ -f "$PREFIX/files/setup-user.sh" ]; then
+            sh "$PREFIX/files/setup-user.sh"
+        fi
     fi
 fi
 

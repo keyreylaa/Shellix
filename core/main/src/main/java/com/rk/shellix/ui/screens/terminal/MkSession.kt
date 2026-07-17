@@ -110,17 +110,21 @@ object MkSession {
                 env.addAll(it)
             }
 
-            // Forward stored Ubuntu user creds to init.sh on first boot so it can
-            // run setup-user.sh and create the sudo user inside the proot.
-            if (Settings.ubuntu_user.isNotBlank() && !Settings.setup_user_done) {
-                env.add("SETUP_USER=${Settings.ubuntu_user}")
-                // Password is read from the secure creds file written by the wizard.
-                val passFile = filesDir.child("setup-pass.txt")
-                if (passFile.exists()) {
-                    env.add("SETUP_PASS=${passFile.readText().trim()}")
-                }
-                Settings.setup_user_done = true
-            }
+// Forward stored Ubuntu user creds to init.sh on first boot so it can
+             // run setup-user.sh and create the sudo user inside the proot.
+             if (Settings.ubuntu_user.isNotBlank() && !Settings.setup_user_done) {
+                 env.add("SETUP_USER=${Settings.ubuntu_user}")
+                 // Password is read from the secure creds file written by the wizard.
+                 val passFile = filesDir.child("setup-pass.txt")
+                 if (passFile.exists()) {
+                     env.add("SETUP_PASS=${passFile.readText().trim()}")
+                 }
+                 env.add("SETUP_SCRIPT=${localBinDir().child("setup-user.sh").absolutePath}")
+                 Settings.setup_user_done = true
+             }
+                 env.add("SETUP_SCRIPT=${localBinDir().child("setup-user.sh").absolutePath}")
+                 Settings.setup_user_done = true
+             }
 
             val args: Array<String>
             val shell = if (pendingCommand == null) {
