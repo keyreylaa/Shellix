@@ -73,12 +73,18 @@ fun TerminalScreen(
 
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
-            if (context.filesDir.child("background").exists().not()) {
-                TerminalUtils.darkText.value = !isDarkMode
+            val decoded = if (context.filesDir.child("background").exists().not()) {
+                null
             } else if (terminalViewModel.bitmap == null) {
-                BitmapFactory.decodeFile(context.filesDir.child("background").absolutePath)?.asImageBitmap()?.let {
-                    terminalViewModel.bitmap = it
+                BitmapFactory.decodeFile(context.filesDir.child("background").absolutePath)?.asImageBitmap()
+            } else {
+                null
+            }
+            withContext(Dispatchers.Main) {
+                if (context.filesDir.child("background").exists().not()) {
+                    TerminalUtils.darkText.value = !isDarkMode
                 }
+                decoded?.let { terminalViewModel.bitmap = it }
             }
         }
     }

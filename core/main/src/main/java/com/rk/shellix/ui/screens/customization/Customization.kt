@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -18,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -293,30 +295,50 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
     var imageExists by remember { mutableStateOf(imageFile.exists()) }
     val noImageSelected = stringResource(strings.no_image_selected)
     var backgroundName by remember { mutableStateOf(if (!imageExists || !imageFile.canRead()) noImageSelected else Settings.custom_background_name) }
+    var preview by remember { mutableStateOf<ImageBitmap?>(viewModel.bitmap) }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             scope.launch(Dispatchers.IO) {
-                imageFile.createFileIfNot()
-                context.contentResolver.openInputStream(it)?.use { input ->
-                    imageFile.outputStream().use { output -> input.copyTo(output) }
-                }
-                val name = context.getFileNameFromUri(it).toString()
-                Settings.custom_background_name = name
-                
-                val bitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
-                bitmap?.let { b ->
-                    val palette = Palette.from(b).generate()
+                try {
+                    val input = context.contentResolver.openInputStream(it)
+                        ?: run {
+                            withContext(Dispatchers.Main) { toast("Failed to open image (unsupported URI)") }
+                            return@launch
+                        }
+                    imageFile.createFileIfNot()
+                    input.use { inp ->
+                        imageFile.outputStream().use { out -> inp.copyTo(out) }
+                    }
+                    if (imageFile.length() == 0L) {
+                        withContext(Dispatchers.Main) { toast("Image copy produced empty file") }
+                        return@launch
+                    }
+
+                    val name = context.getFileNameFromUri(it).toString()
+                    Settings.custom_background_name = name
+
+                    val bitmap = BitmapFactory.decodeFile(imageFile.absolutePath)
+                    if (bitmap == null) {
+                        withContext(Dispatchers.Main) { toast("Failed to decode image (unsupported/corrupt format)") }
+                        return@launch
+                    }
+
+                    val palette = Palette.from(bitmap).generate()
                     val dominantColor = palette.getDominantColor(android.graphics.Color.WHITE)
                     val luminance = androidx.core.graphics.ColorUtils.calculateLuminance(dominantColor)
                     val isDark = luminance > 0.5f
                     Settings.blackTextColor = isDark
+                    val imgBitmap = bitmap.asImageBitmap()
                     withContext(Dispatchers.Main) {
                         TerminalUtils.darkText.value = isDark
-                        viewModel.bitmap = b.asImageBitmap()
+                        viewModel.bitmap = imgBitmap
+                        preview = imgBitmap
                         backgroundName = name
                         imageExists = true
                     }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) { toast("Background error: ${e.message}") }
                 }
             }
         }
@@ -336,6 +358,7 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
                         backgroundName = noImageSelected
                         TerminalUtils.darkText.value = !isDarkMode
                         imageExists = false
+                        preview = null
                         viewModel.bitmap = null
                     }
                 }) {
@@ -344,6 +367,20 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
             }
         }
     )
+
+    // Instant preview so the user knows the image loaded before leaving settings.
+    preview?.let { bmp ->
+        Spacer(Modifier.height(8.dp))
+        Image(
+            bitmap = bmp,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(140.dp)
+                .padding(horizontal = 16.dp)
+        )
+    }
 
     if (imageExists) {
         PreferenceTemplate(title = { Text(stringResource(strings.wallpaper_alpha)) }) {
