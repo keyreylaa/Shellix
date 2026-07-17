@@ -43,6 +43,7 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
     var aptResults by remember { mutableStateOf<List<Pkg>>(emptyList()) }
     var searchMode by remember { mutableStateOf(SearchMode.INSTALLED) }
     var busy by remember { mutableStateOf(false) }
+    var failed by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Pkg?>(null) }
     var confirmText by remember { mutableStateOf<String?>(null) }
     var confirmInstall by remember { mutableStateOf(false) }
@@ -52,19 +53,32 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
         if (Rootfs.isInstalled.value.not()) return
         scope.launch {
             busy = true
-            val out = UbuntuCommand.run(
-                sessionBinder,
-                "dpkg-query -W -f='\${Package}\\t\${Version}\\t\${Status}\\t\${Section}\\t\${Description}\\n'"
-            )
+            failed = false
+            val out = UbuntuCommand.run(sessionBinder, "dpkg -l")
             busy = false
             out.onSuccess { text ->
-                packages = text.lines().mapNotNull { line ->
-                    val p = line.split("\t")
-                    if (p.size >= 4 && p[2].contains("install ok installed"))
-                        Pkg(p[0], p[1], if (p.size >= 5) p[4] else "", if (p.size >= 4) p[3] else "")
-                    else null
-                }
-            }.onFailure { toast(it.message ?: "list failed") }
+                packages = parseDpkgList(text)
+                failed = false
+            }.onFailure {
+                failed = true
+                toast(it.message ?: "list failed")
+            }
+        }
+    }
+
+    // Parses `dpkg -l` output. Installed packages have the status column "ii".
+    // dpkg -l emits a single-line summary (no embedded newlines), unlike
+    // `dpkg-query -W -f='${Description}'` whose Description field is multiline
+    // and breaks line-based parsing.
+    fun parseDpkgList(text: String): List<Pkg> {
+        return text.lines().mapNotNull { line ->
+            if (!line.startsWith("ii ")) return@mapNotNull null
+            val parts = line.split(Regex("\\s+")).filter { it.isNotEmpty() }
+            if (parts.size < 5) return@mapNotNull null
+            val name = parts[1]
+            val version = parts[2]
+            val summary = parts.subList(4, parts.size).joinToString(" ")
+            Pkg(name, version, summary)
         }
     }
 
@@ -169,6 +183,19 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
         }.let { list ->
             val q = query.trim()
             if (q.isEmpty()) list else list.filter { it.name.contains(q, ignoreCase = true) }
+        }
+        if (failed) {
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                Text("Failed to load packages. Open a terminal and check the Ubuntu session.")
+            }
+        } else if (filtered.isEmpty()) {
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                Text(
+                    if (busy) "Loading…"
+                    else if (searchMode == SearchMode.APT) "No apt matches"
+                    else "No installed packages"
+                )
+            }
         }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             items(filtered) { pkg ->
@@ -324,7 +351,7 @@ fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
             confirmButton = {
                 Button(onClick = {
                     val cmd = if (confirmInstall)
-                        "apt-get install -y ${query.trim()}"
+                        "apt-get install -y ${selected?.name ?: query.trim()}"
                     else
                         "apt-get remove -y ${selected?.name ?: ""}"
                     scope.launch {

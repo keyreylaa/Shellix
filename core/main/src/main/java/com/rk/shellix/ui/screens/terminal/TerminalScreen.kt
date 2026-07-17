@@ -1,7 +1,10 @@
 package com.rk.shellix.ui.screens.terminal
 
 import android.content.res.Configuration
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BlurMaskFilter
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -18,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -133,9 +137,12 @@ fun TerminalScreen(
             )
         }
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Background drawn first => naturally behind the terminal Column (Compose
+            // paints in declaration order). No zIndex(-1f): on API <31 a negative zIndex
+            // can get clipped and the image disappears entirely.
             key(terminalViewModel.bitmap) { BackgroundImage(terminalViewModel) }
-            
+
             Column {
                 if (terminalViewModel.showToolbar) {
                     TerminalTopBar(
@@ -193,23 +200,50 @@ fun TerminalScreen(
 @Composable
 private fun BackgroundImage(viewModel: TerminalViewModel) {
     viewModel.bitmap?.let { bitmap ->
+        // Modifier.blur() relies on RenderEffect, which only exists on API 31+.
+        // On older Android it silently does nothing (or drops the layer), so fall
+        // back to pre-blurring the Bitmap itself with BlurMaskFilter (all API levels).
+        val renderBitmap = if (viewModel.backgroundBlur > 0f && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            remember(bitmap, viewModel.backgroundBlur) {
+                blurBitmap(bitmap, viewModel.backgroundBlur)
+            }
+        } else {
+            bitmap
+        }
+
         Image(
-            bitmap = bitmap,
+            bitmap = renderBitmap,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
                 .alpha(viewModel.wallAlpha)
                 .let {
-                    if (viewModel.backgroundBlur > 0f) {
+                    if (viewModel.backgroundBlur > 0f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         it.blur(viewModel.backgroundBlur.dp)
                     } else {
                         it
                     }
                 }
-                .zIndex(-1f)
         )
     }
+}
+
+private fun blurBitmap(bitmap: ImageBitmap, radiusDp: Float): ImageBitmap {
+    val src = bitmap.asAndroidBitmap()
+    val scale = 0.35f // downscale for a cheap, soft blur
+    val w = maxOf(1, (src.width * scale).toInt())
+    val h = maxOf(1, (src.height * scale).toInt())
+    val small = Bitmap.createScaledBitmap(src, w, h, true)
+    val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(out)
+    val paint = android.graphics.Paint().apply {
+        isAntiAlias = true
+        maskFilter = BlurMaskFilter(radiusDp * scale + 1f, BlurMaskFilter.Blur.NORMAL)
+    }
+    canvas.drawBitmap(small, 0f, 0f, paint)
+    small.recycle()
+    return out.asImageBitmap()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
