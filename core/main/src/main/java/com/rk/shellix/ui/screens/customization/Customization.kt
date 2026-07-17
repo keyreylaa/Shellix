@@ -323,7 +323,7 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
                     // Decode once via ImageDecoder (all Android-native formats) to
                     // derive the text-color hint from the palette.
                     val bmp = try {
-                        TerminalThemes.decodeBitmap(imageFile).asAndroidBitmap()
+                        TerminalThemes.decodeBitmap(context, imageFile).asAndroidBitmap()
                     } catch (e: Exception) { null }
                     if (bmp == null) {
                         withContext(Dispatchers.Main) { toast("Failed to decode image (unsupported/corrupt format)") }

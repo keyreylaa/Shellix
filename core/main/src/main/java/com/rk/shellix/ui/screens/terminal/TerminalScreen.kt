@@ -212,7 +212,7 @@ private fun BackgroundImage(viewModel: TerminalViewModel) {
         if (file == null) { resolved = null; return@LaunchedEffect }
         withContext(Dispatchers.IO) {
             val bmp = try {
-                TerminalThemes.decodeBitmap(file)
+                TerminalThemes.decodeBitmap(context, file)
             } catch (e: Exception) { null }
             withContext(Dispatchers.Main) { resolved = bmp }
         }

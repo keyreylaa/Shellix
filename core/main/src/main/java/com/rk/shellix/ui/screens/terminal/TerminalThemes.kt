@@ -3,7 +3,6 @@ package com.rk.shellix.ui.screens.terminal
 import android.content.Context
 import android.graphics.ImageDecoder
 import android.os.Build
-import android.os.ParcelFileDescriptor
 import androidx.compose.ui.graphics.asImageBitmap
 import com.rk.libcommons.child
 import com.rk.libcommons.createFileIfNot
@@ -36,10 +35,9 @@ object TerminalThemes {
      * ImageDecoder so every Android-native format (HEIC/WebP/AVIF on supported OS
      * versions) loads. Falls back to BitmapFactory below API 28.
      */
-    fun decodeBitmap(file: File): androidx.compose.ui.graphics.ImageBitmap {
+    fun decodeBitmap(context: android.content.Context, file: File): androidx.compose.ui.graphics.ImageBitmap {
         val src = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-            ImageDecoder.decodeBitmap(ImageDecoder.createSource(pfd)) { decoder, _, _ ->
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(context, file)) { decoder, _, _ ->
                 decoder.isMutableRequired = true
             }
         } else {
