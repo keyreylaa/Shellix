@@ -126,6 +126,7 @@ android.enableR8.fullMode=false
 | P3 | `android.enableR8.fullMode=true` after P1 validated | perf | small extra shrink | med (reflection) |
 | P4 | `resourceConfigs("en")` if UI English-only | perf | small | low |
 | S2 | Quote `$command` in `UbuntuCommand.run` wrapped command | sec/correctness | — | low |
+| S3 | Don't leave `setup-pass.txt` (plaintext Ubuntu password) on disk after first boot | sec | — | low |
 | S4 | Confirm `filesDir` is 0700 (app-private) | sec | — | low |
 
 ## Validation plan
@@ -176,6 +177,12 @@ android.enableR8.fullMode=false
 ### S4 (filesDir 0700) — VERIFIED, NO CHANGE
 - See security findings S4 above: Android default `0700` already holds; no widening
   calls exist in the codebase.
+
+### S3 (purge plaintext password after first boot) — SHIPPED
+- `setup-pass.txt` (the Ubuntu user password chosen in the setup wizard) was written
+  to `filesDir` on first boot and never removed, leaving the plaintext credential at
+  rest indefinitely. `MkSession.kt` now deletes the file immediately after reading it
+  into `SETUP_PASS` env for the one-time `setup-user.sh` run. CI green.
 
 ## References
 - Tavily: Android APK size reduction via `ndk.abiFilters` (arm64-v8a-only) — ~50 % cut.
