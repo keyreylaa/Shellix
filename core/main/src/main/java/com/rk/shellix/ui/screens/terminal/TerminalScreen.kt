@@ -172,6 +172,16 @@ fun TerminalScreen(
                             .padding(top = topPadding)
                             .fillMaxSize()
                     )
+
+                    SessionTabBar(
+                        sessionBinder = sessionBinder,
+                        onSessionSelected = { id ->
+                            terminalViewModel.changeSession(context, sessionBinder, id)
+                            scope.launch { drawerState.close() }
+                        },
+                        onCreateSession = { showAddDialog = true },
+                        onCloseSession = { id -> sessionBinder.terminateSession(id) }
+                    )
                 }
             }
         }
