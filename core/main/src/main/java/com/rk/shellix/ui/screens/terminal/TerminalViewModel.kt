@@ -4,12 +4,12 @@ import android.content.Context
 import android.graphics.Typeface
 import android.util.TypedValue
 import androidx.compose.runtime.getValue
-import java.io.File
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.google.android.material.R
+import com.rk.libcommons.localDir
 import com.rk.settings.Settings
 import com.rk.shellix.service.SessionService
 import com.rk.shellix.ui.activities.terminal.MainActivity
@@ -17,6 +17,7 @@ import com.rk.shellix.ui.screens.terminal.virtualkeys.VirtualKeysListener
 import com.rk.shellix.ui.screens.terminal.virtualkeys.VirtualKeysView
 import com.termux.terminal.TerminalColors
 import com.termux.view.TerminalView
+import java.io.File
 import java.lang.ref.WeakReference
 import java.util.Properties
 
@@ -98,12 +99,13 @@ class TerminalViewModel : ViewModel() {
         val props = Properties()
         val file = context.localDir().child("colors.properties")
         if (file.exists() && file.isFile) {
-            file.inputStream().use { props.load(it) }
+            java.io.FileInputStream(file).use { props.load(it) }
         }
         TerminalColors.COLOR_SCHEME.updateWith(props)
 
         currentBinder?.getService()?.allSessions()?.forEach { session ->
             session.emulator?.mColors?.updateWith(props)
+            session.emulator?.onColorsChanged()
             terminalView?.onScreenUpdated()
         }
         terminalView?.onScreenUpdated()

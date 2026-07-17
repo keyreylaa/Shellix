@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.rk.settings.Settings
 import com.rk.shellix.service.SessionService
+import com.rk.shellix.ui.screens.terminal.TerminalViewModel
 
 class MainViewModel : ViewModel() {
     var sessionBinder by mutableStateOf<SessionService.SessionBinder?>(null)

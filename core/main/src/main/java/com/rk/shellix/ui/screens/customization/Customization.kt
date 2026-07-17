@@ -327,7 +327,7 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
                     val result = context.imageLoader.execute(
                         ImageRequest.Builder(context).data(imageFile).allowHardware(false).build()
                     )
-                    val bmp = (result as? coil.request.SuccessResult)?.image?.toBitmap()
+                    val bmp = result.image?.toBitmap()
                     if (bmp == null) {
                         withContext(Dispatchers.Main) { toast("Failed to decode image (unsupported/corrupt format)") }
                         return@launch
