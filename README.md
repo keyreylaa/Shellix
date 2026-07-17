@@ -51,12 +51,23 @@ A Material 3 terminal emulator for Android that boots a real Ubuntu 24.04 Noble 
 **Done after v1.0.0**
 - [x] Custom wallpaper background: pick your own image, with live blur + alpha sliders
 - [x] Wake-lock: screen stays on while a terminal session is active
+- [x] Session tab bar: switch/close sessions from a bottom strip (no drawer needed)
 
-**Next**
-- [ ] Tab bar UI for sessions (visual session switcher)
-- [ ] Inline terminal image rendering (sixel / image preview)
-- [ ] Package categories / sources management UI
-- [ ] Per-app theme + font settings persistence
+**Done after v1.0.0**
+- [x] Custom wallpaper background: pick your own image, with live blur + alpha sliders
+- [x] Wake-lock: screen stays on while a terminal session is active
+- [x] Session tab bar: switch/close sessions from a bottom strip (no drawer needed)
+- [x] Theme + font persistence (Material You / Dracula / dark-light + custom .ttf — already persisted and auto-reloaded)
+
+**Blocked / deferred**
+- [ ] Inline terminal image rendering (sixel) — blocked: needs a sixel-capable `terminal-emulator` AAR upgrade (risky, no local build to verify). Revisit when upgrading Termux libs.
+
+**Done after v1.0.0**
+- [x] Custom wallpaper background: pick your own image, with live blur + alpha sliders
+- [x] Wake-lock: screen stays on while a terminal session is active
+- [x] Session tab bar: switch/close sessions from a bottom strip (no drawer needed)
+- [x] Theme + font persistence (Material You / Dracula / dark-light + custom .ttf — already persisted and auto-reloaded)
+- [x] Packages: apt search, section/category labels, and sources.list viewer
 
 ## Credits
 - Fork of [ReTerminal](https://github.com/RohitKushvaha01/ReTerminal), which is a fork of [Termux](https://github.com/termux/termux-app).
