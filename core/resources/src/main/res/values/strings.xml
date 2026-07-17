@@ -16,8 +16,9 @@
     <string name="no_font_selected">No Font Selected</string>
     <string name="custom_font">Custom Font</string>
     <string name="no_image_selected">No Image Selected</string>
-    <string name="custom_background">Custom Background</string>
+    <string name="custom_background">Wallpaper</string>
     <string name="wallpaper_alpha">Wallpaper Alpha</string>
+    <string name="wallpaper_blur">Wallpaper Blur</string>
     <string name="bell">Bell</string>
     <string name="bell_desc">Play bell sound</string>
     <string name="vibrate">Vibrate</string>

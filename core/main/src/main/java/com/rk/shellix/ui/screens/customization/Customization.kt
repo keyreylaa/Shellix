@@ -88,34 +88,6 @@ fun Customization(
         }
 
         PreferenceGroup {
-            PreferenceTemplate(title = { Text(stringResource(strings.wallpaper_alpha)) }) {
-                Text(DecimalFormat("0.##").apply { roundingMode = RoundingMode.HALF_UP }.format(terminalViewModel.wallAlpha))
-            }
-            PreferenceTemplate(title = {}) {
-                Slider(
-                    value = terminalViewModel.wallAlpha,
-                    onValueChange = { terminalViewModel.wallAlpha = it },
-                    onValueChangeFinished = { Settings.wallTransparency = terminalViewModel.wallAlpha }
-                )
-            }
-        }
-
-        PreferenceGroup() {
-            PreferenceTemplate(title = { Text("Background Blur") }) {
-                Text(terminalViewModel.backgroundBlur.toInt().toString())
-            }
-            PreferenceTemplate(title = {}) {
-                Slider(
-                    value = terminalViewModel.backgroundBlur,
-                    onValueChange = { terminalViewModel.backgroundBlur = it },
-                    onValueChangeFinished = { Settings.background_blur = terminalViewModel.backgroundBlur },
-                    valueRange = 0f..25f,
-                    steps = 24
-                )
-            }
-        }
-
-        PreferenceGroup {
             SettingsToggle(label = stringResource(strings.bell), description = stringResource(strings.bell_desc), showSwitch = true, default = Settings.bell, sideEffect = { Settings.bell = it })
             SettingsToggle(label = stringResource(strings.vibrate), description = stringResource(strings.vibrate_desc), showSwitch = true, default = Settings.vibrate, sideEffect = { Settings.vibrate = it })
         }
@@ -309,6 +281,37 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
             }
         }
     )
+
+    if (imageExists) {
+        PreferenceTemplate(title = { Text(stringResource(strings.wallpaper_alpha)) }) {
+            Text(DecimalFormat("0.##").apply { roundingMode = RoundingMode.HALF_UP }.format(viewModel.wallAlpha))
+        }
+        PreferenceTemplate(title = {}) {
+            Slider(
+                value = viewModel.wallAlpha,
+                onValueChange = {
+                    viewModel.wallAlpha = it
+                    Settings.wallTransparency = it
+                },
+                valueRange = 0f..1f,
+            )
+        }
+
+        PreferenceTemplate(title = { Text(stringResource(strings.wallpaper_blur)) }) {
+            Text(viewModel.backgroundBlur.toInt().toString())
+        }
+        PreferenceTemplate(title = {}) {
+            Slider(
+                value = viewModel.backgroundBlur,
+                onValueChange = {
+                    viewModel.backgroundBlur = it
+                    Settings.background_blur = it
+                },
+                valueRange = 0f..25f,
+                steps = 25,
+            )
+        }
+    }
 }
 
 @Composable
