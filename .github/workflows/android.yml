@@ -63,4 +63,4 @@ jobs:
           -F chat_id="-1002292589492" \
           -F message_thread_id="116" \
           -F caption="${{ github.event.head_commit.message }} by ${{ github.actor }}" \
-          -F document=@"app/reterminal-${{ env.COMMIT_HASH }}.apk"
+          -F document=@"app/shellix-${{ env.COMMIT_HASH }}.apk"
