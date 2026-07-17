@@ -319,11 +319,10 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
                     // Decode once via Coil so all Android-native formats load, then
                     // derive the text-color hint from the palette. Hardware bitmaps
                     // are disabled because Palette must read the pixels.
-                    val bmp = try {
-                        context.imageLoader.execute(
-                            ImageRequest.Builder(context).data(imageFile).allowHardware(false).build()
-                        ).image?.toBitmap()
-                    } catch (e: Exception) { null }
+                    val result = context.imageLoader.execute(
+                        ImageRequest.Builder(context).data(imageFile).allowHardware(false).build()
+                    )
+                    val bmp = (result as? coil.request.SuccessResult)?.image?.toBitmap()
                     if (bmp == null) {
                         withContext(Dispatchers.Main) { toast("Failed to decode image (unsupported/corrupt format)") }
                         return@launch

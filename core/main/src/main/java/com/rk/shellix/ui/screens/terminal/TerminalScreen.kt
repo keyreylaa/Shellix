@@ -211,7 +211,7 @@ private fun BackgroundImage(viewModel: TerminalViewModel) {
         if (file == null) { resolved = null; return@LaunchedEffect }
         withContext(Dispatchers.IO) {
             val bmp = try {
-                ImageLoader(context).execute(ImageRequest.Builder(context).data(file).build())
+                context.imageLoader.execute(ImageRequest.Builder(context).data(file).build())
                     .image?.asImageBitmap()
             } catch (e: Exception) { null }
             withContext(Dispatchers.Main) { resolved = bmp }
