@@ -37,7 +37,7 @@ object TerminalThemes {
      */
     fun decodeBitmap(context: android.content.Context, file: File): androidx.compose.ui.graphics.ImageBitmap {
         val src = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            ImageDecoder.decodeBitmap(ImageDecoder.createSource(context, file)) { decoder, _, _ ->
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(file)) { decoder, _, _ ->
                 decoder.isMutableRequired = true
             }
         } else {

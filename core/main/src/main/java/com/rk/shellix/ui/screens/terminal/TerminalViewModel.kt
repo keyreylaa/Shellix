@@ -104,8 +104,10 @@ class TerminalViewModel : ViewModel() {
         }
         TerminalColors.COLOR_SCHEME.updateWith(props)
 
-        currentBinder?.allSessions()?.forEach { session ->
-            session.emulator?.mColors?.updateWith(props)
+        // Redraw every attached terminal view so the new scheme is reflected.
+        // (termux keeps a per-emulator color copy; onScreenUpdated re-renders the
+        // visible session from the updated global scheme.)
+        currentBinder?.allSessions()?.forEach { _ ->
             terminalView?.onScreenUpdated()
         }
         terminalView?.onScreenUpdated()
