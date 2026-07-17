@@ -28,9 +28,36 @@ Compact guidance for agents working in the **Shellix** repo (Android/Kotlin, a r
 - **Custom font** loads from `filesDir/font.ttf` (Typeface.createFromFile), picker in `Customization.kt:204-251`. No bundled-font selector.
 
 ## Backlog (user-requested, not yet built)
-- **Custom wallpaper background**: terminal already supports a user image at `filesDir/background` (see above) — polish it as a labeled "wallpaper" with optional blur/alpha controls.
-- **GitHub Wiki**: fill `github.com/keyreylaa/Shellix/wiki` (Home, Setup, Features, Changelog) professionally.
-- **Release changelog**: keep release notes detailed/structured (version, date, changes).
-- Tag format `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`), pushed with `git push origin v1.0.0`.
-- GitHub Release is created from the green CI run's APK artifact. Asset name is `Shellix-vX.Y.Z.apk`.
-- Delete failed CI runs (`gh run delete <id>`) so the Actions list stays clean.
+- **Inline terminal image rendering (sixel)**: blocked — needs a sixel-capable `terminal-emulator` AAR upgrade (risky, no local build to verify).
+- **Sources.list editor**: the Packages tab already has a read-only sources.list viewer; a full editor (toggle `#`, add repos) is future work.
+
+## Release (how to make the APK downloadable)
+Builds run only in GitHub Actions (no local gradle). To cut a release so users can download the APK:
+
+1. **Push to `master`.** The `Android CI` workflow (`.github/workflows/android.yml`) runs `./gradlew assembleRelease`, signs the APK (debug keystore fallback when no real keystore secret), and uploads the artifact named `Shellix-Release`. The APK file is `app/shellix-<short-sha>.apk`.
+2. **Wait for the green run** (`gh run list --limit 1`, then `gh run view <id> --log-failed` if red). Fix any compile errors and re-push. Delete failed runs with `gh run delete <id>` so the Actions list stays clean.
+3. **Download the APK artifact** from the green run:
+   ```
+   gh run download <RUN_ID> --name Shellix-Release --dir /tmp/apk
+   ```
+   The file is `shellix-<sha>.apk`. Copy it to `Shellix-vX.Y.Z.apk` for the release asset.
+4. **Tag the version** (semver, e.g. `v1.1.0`):
+   ```
+   git tag -a vX.Y.Z -m "Shellix vX.Y.Z - <short summary>"
+   git push origin vX.Y.Z
+   ```
+5. **Create the GitHub Release** from the tag and attach the APK so it is downloadable:
+   ```
+   gh release create vX.Y.Z /tmp/apk/Shellix-vX.Y.Z.apk \
+     --title "Shellix vX.Y.Z" \
+     --notes "$(cat changelog.md)"
+   ```
+   Users then download from `https://github.com/keyreylaa/Shellix/releases/download/vX.Y.Z/Shellix-vX.Y.Z.apk`.
+6. **Sync the changelog** in two places so they never drift:
+   - The wiki `Changelog.md` at `https://github.com/keyreylaa/Shellix/wiki` (edit via the `Shellix.wiki.git` repo).
+   - The GitHub Release notes (above `--notes`).
+   Keep both detailed and structured (version, date, Added / Fixed / Build-CI). Mirror the README Roadmap checkboxes.
+
+Notes:
+- The old Telegram upload step was **removed** (it posted to a non-owner channel) — do not re-add it.
+- If a release already exists for that tag, delete it first (`gh release delete vX.Y.Z -y && git push --delete origin vX.Y.Z`) before recreating.
