@@ -101,11 +101,19 @@ fun TerminalScreen(
         drawerState = drawerState,
         gesturesEnabled = drawerState.isOpen || !terminalViewModel.showToolbar,
         drawerContent = {
+            val onClearClick = {
+                val binder = sessionBinder
+                val id = binder?.getService()?.currentSession?.value?.first
+                val session = id?.let { binder.getSession(it) }
+                session?.emulator?.paste("\u000c")
+            }
+
             TerminalDrawer(
                 drawerWidth = drawerWidth,
                 sessionBinder = sessionBinder,
                 navController = navController,
                 onAddSession = { showAddDialog = true },
+                onClearClick = onClearClick,
                 onSessionSelected = { id ->
                     sessionBinder?.let { terminalViewModel.changeSession(context, it, id) }
                     scope.launch { drawerState.close() }

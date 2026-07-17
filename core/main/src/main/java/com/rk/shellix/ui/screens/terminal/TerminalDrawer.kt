@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
@@ -26,6 +28,7 @@ fun TerminalDrawer(
     sessionBinder: SessionService.SessionBinder?,
     navController: NavController,
     onAddSession: () -> Unit,
+    onClearClick: () -> Unit,
     onSessionSelected: (String) -> Unit
 ) {
     ModalDrawerSheet(modifier = Modifier.width(drawerWidth)) {
@@ -56,6 +59,16 @@ fun TerminalDrawer(
 
                     IconButton(onClick = onAddSession) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = null)
+                    }
+
+                    IconButton(onClick = {
+                        navController.navigate(MainActivityRoutes.Packages.route)
+                    }) {
+                        Icon(Icons.Default.List, contentDescription = "Packages")
+                    }
+
+                    IconButton(onClick = onClearClick) {
+                        Icon(Icons.Default.Delete, contentDescription = "Clear")
                     }
                 }
             }
