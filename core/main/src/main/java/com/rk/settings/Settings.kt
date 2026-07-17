@@ -74,6 +74,10 @@ object Settings {
         get() = Preference.getBoolean(key = "blackText", default = false)
         set(value) = Preference.setBoolean(key = "blackText",value)
 
+    var terminal_color_scheme
+        get() = Preference.getString(key = "terminal_color_scheme", default = "Default")
+        set(value) = Preference.setString(key = "terminal_color_scheme", value)
+
     var bell
         get() = Preference.getBoolean(key = "bell", default = false)
         set(value) = Preference.setBoolean(key = "bell",value)

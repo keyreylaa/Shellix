@@ -26,12 +26,14 @@ class MainViewModel : ViewModel() {
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             sessionBinder = service as SessionService.SessionBinder
+            TerminalViewModel.currentBinder = sessionBinder
             isBound = true
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             isBound = false
             sessionBinder = null
+            TerminalViewModel.currentBinder = null
         }
     }
 
@@ -50,6 +52,7 @@ class MainViewModel : ViewModel() {
             context.unbindService(serviceConnection)
             isBound = false
             sessionBinder = null
+            TerminalViewModel.currentBinder = null
         }
     }
 }

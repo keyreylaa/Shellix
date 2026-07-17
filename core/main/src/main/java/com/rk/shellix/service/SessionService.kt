@@ -55,6 +55,8 @@ class SessionService : Service() {
 
         fun getSession(id: String): TerminalSession? = sessions[id]
 
+        fun allSessions(): List<TerminalSession> = sessions.values.toList()
+
         fun terminateSession(id: String) {
             sessions[id]?.apply {
                 if (emulator != null) {

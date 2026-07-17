@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,6 +90,10 @@ fun Customization(
 
         PreferenceGroup {
             BackgroundSection(terminalViewModel)
+        }
+
+        PreferenceGroup(heading = "Terminal Theme") {
+            TerminalThemeSection(terminalViewModel)
         }
 
         PreferenceGroup {
@@ -413,6 +418,48 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
             )
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TerminalThemeSection(viewModel: TerminalViewModel) {
+    val context = LocalContext.current
+    val schemes = TerminalColorSchemes.ALL
+    var selected by remember { mutableStateOf(Settings.terminal_color_scheme) }
+    var expanded by remember { mutableStateOf(false) }
+
+    PreferenceTemplate(
+        modifier = Modifier.clickable { expanded = true },
+        title = { Text("Terminal Theme") },
+        description = { Text(selected) },
+        endWidget = {
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = it }
+            ) {
+                Text(
+                    text = selected,
+                    modifier = Modifier.menuAnchor()
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    schemes.forEach { scheme ->
+                        DropdownMenuItem(
+                            text = { Text(scheme.name) },
+                            onClick = {
+                                selected = scheme.name
+                                Settings.terminal_color_scheme = scheme.name
+                                expanded = false
+                                viewModel.applyColorSchemeGlobally(context, scheme)
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    )
 }
 
 @Composable

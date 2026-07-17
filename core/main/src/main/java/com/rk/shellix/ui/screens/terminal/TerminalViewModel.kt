@@ -15,10 +15,18 @@ import com.rk.shellix.service.SessionService
 import com.rk.shellix.ui.activities.terminal.MainActivity
 import com.rk.shellix.ui.screens.terminal.virtualkeys.VirtualKeysListener
 import com.rk.shellix.ui.screens.terminal.virtualkeys.VirtualKeysView
+import com.termux.terminal.TerminalColors
 import com.termux.view.TerminalView
 import java.lang.ref.WeakReference
+import java.util.Properties
 
 class TerminalViewModel : ViewModel() {
+
+    companion object {
+        // Set by MainViewModel when the SessionService binds, so settings screens
+        // can live-apply changes (e.g. color schemes) to every running session.
+        var currentBinder: SessionService.SessionBinder? = null
+    }
     private var terminalViewRef = WeakReference<TerminalView>(null)
     private var virtualKeysViewRef = WeakReference<VirtualKeysView>(null)
 
@@ -76,5 +84,28 @@ class TerminalViewModel : ViewModel() {
         }
         
         sessionBinder.getService().currentSession.value = Pair(sessionId, sessionBinder.getService().sessionList[sessionId]!!)
+    }
+
+    /**
+     * Apply a terminal color [scheme] and push it to every live session without
+     * restarting any of them. Writes the termux `colors.properties` file, updates
+     * the global [TerminalColors] scheme, then re-tints each session's emulator
+     * and redraws the attached view.
+     */
+    fun applyColorSchemeGlobally(context: Context, scheme: ColorScheme) {
+        TerminalThemes.applyScheme(context, scheme)
+
+        val props = Properties()
+        val file = context.localDir().child("colors.properties")
+        if (file.exists() && file.isFile) {
+            file.inputStream().use { props.load(it) }
+        }
+        TerminalColors.COLOR_SCHEME.updateWith(props)
+
+        currentBinder?.getService()?.allSessions()?.forEach { session ->
+            session.emulator?.mColors?.updateWith(props)
+            terminalView?.onScreenUpdated()
+        }
+        terminalView?.onScreenUpdated()
     }
 }
