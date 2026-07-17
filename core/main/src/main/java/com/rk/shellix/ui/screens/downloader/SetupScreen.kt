@@ -2,6 +2,7 @@ package com.rk.shellix.ui.screens.downloader
 
 import android.os.Build
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
