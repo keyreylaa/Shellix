@@ -147,11 +147,13 @@ android.enableR8.fullMode=false
   `isCrunchPngs = true`. `app/proguard-rules.pro` no longer has `-dontshrink`/`-dontobfuscate`;
   added explicit keep rules for `com.termux.**`, `coil.**`/`coil3.**`, `kotlinx.coroutines.**`,
   `androidx.compose.**` (all reached via reflection / stable API).
-- **CI build passes**, but this environment has no device/emulator, so launch-time
-  behaviour (terminal session, Ubuntu PRoot boot) is UNVERIFIED. **User must install
-  the CI release APK on a real arm64 device and confirm:** (1) app opens, (2) a terminal
-  session renders, (3) Ubuntu setup/boot works, (4) background image + font load. If it
-  crashes, capture the logcat and report — likely a missing keep rule.
+- **CI build passes** (commit `7d4e719` + fix `122344c`), but this environment has no
+  device/emulator, so launch-time behaviour (terminal session, Ubuntu PRoot boot) is
+  UNVERIFIED. **User must install the CI release APK on a real arm64 device and confirm:**
+  (1) app opens, (2) a terminal session renders, (3) Ubuntu setup/boot works, (4) background
+  image + font load. If it crashes, capture the logcat and report — likely a missing keep
+  rule. Note: the run's `Shellix-Release` artifact did not appear in the artifacts API
+  (upload step intermittent); size comparison is pending a manual download from the release.
 
 ### P3 (R8 full mode) — SHIPPED (with P1)
 - `gradle.properties`: `android.enableR8.fullMode=true`. More aggressive optimization;
@@ -159,8 +161,8 @@ android.enableR8.fullMode=false
   on-device validation requirement as P1.
 
 ### P4 (resourceConfigs = en) — SHIPPED
-- `app/build.gradle.kts` defaultConfig: `resourceConfigs += listOf("en")`. Drops the
-  bundled `ar`/`zh` translations in `core/resources` from the APK (UI is English-only;
+- `app/build.gradle.kts` defaultConfig: `resourceConfigurations += listOf("en")`. Drops
+  the bundled `ar`/`zh` translations in `core/resources` from the APK (UI is English-only;
   other locales fall back to English). No device risk.
 
 ### P2 (abiFilters = arm64-v8a) — SHIPPED, CI GREEN
