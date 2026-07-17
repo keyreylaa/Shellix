@@ -1,0 +1,39 @@
+# Shellix
+
+**Shellix** is a sleek, Material 3 terminal emulator for Android that boots a real **Ubuntu 24.04 (Noble Numbat)** Linux environment via PRoot — not just a plain Android shell. Built on Termux's battle-tested TerminalView.
+
+> Note: Shellix runs Ubuntu over PRoot on top of the Android kernel. It is ideal for learning Linux, shell scripting, and light development. Heavy compilation, GPU workloads, and low-port networking need a rooted device or a VPS.
+
+## Features
+- **Ubuntu 24.04 Noble** rootfs downloaded on first run (SHA-256 verified), with a first-boot **setup wizard** that creates a sudo user.
+- **Material 3** UI with light/dark/OLED and **Dynamic Color (Material You)** themes.
+- **Dracula terminal theme** preset (plus default), switchable in Customization.
+- **Virtual keys** including a **Shift** key, Ctrl, Alt, arrows, and function keys.
+- **Multiple sessions** managed from a navigation drawer.
+- **Configurable keyboard shortcuts** (paste, new/close/switch session).
+- **Full storage access** via PRoot bind mounts + `MANAGE_EXTERNAL_STORAGE`.
+
+## Getting Started
+1. Install the APK (download the latest release from GitHub Releases).
+2. On first launch, Shellix downloads the Ubuntu Noble rootfs (needs internet), extracts it, and opens a **setup wizard**.
+3. Enter a username and password for your sudo user (defaults: user `shellix`, auto-generated password shown once — save it!).
+4. You boot into Ubuntu bash as that user. Run `sudo apt update && sudo apt upgrade` to get started.
+
+## Build from source
+- Requires Android SDK + JDK 17.
+- `./gradlew assembleDebug` (or use the GitHub Actions workflow).
+- The app is built and verified via GitHub Actions (`.github/workflows/android.yml`).
+
+## Roadmap
+- Packages tab (browse/install/uninstall apt packages with search).
+- Voice-to-command input.
+- Tab bar UI for sessions.
+- Inline terminal image rendering.
+
+## Credits
+- Fork of [ReTerminal](https://github.com/RohitKushvaha01/ReTerminal), which is a fork of [Termux](https://github.com/termux/termux-app).
+- Terminal engine: Termux `terminal-view` / `terminal-emulator`.
+- PRoot sandboxing.
+
+## License
+See repository license file.
