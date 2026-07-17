@@ -24,9 +24,13 @@ Compact guidance for agents working in the **Shellix** repo (Android/Kotlin, a r
 - Commit small, push frequently (CI is the only build check).
 - Internal tooling (`.kilo/`, `.agents/`, `docs/superpowers/`, `shellix_rebrand.sh`) is gitignored — never commit it. Specs/plans go in `docs/specs/` and `docs/plans/` (NOT `docs/superpowers/`).
 - Keep Compose UI lightweight (user wants a snappy app).
-- Use the `java-docs` skill conventions (KDoc/Javadoc) for new public helpers.
+- **Terminal background is a user image already.** `BackgroundImage` (TerminalScreen.kt:175-194) draws `filesDir/background` as a Compose `Image` behind a transparent `TerminalView` (`TerminalViewLayout.kt:42` sets `TRANSPARENT`). `wallTransparency` + `background_blur` settings drive alpha/blur. Image picker is in `Customization.kt:253-312` (copies chosen image to `filesDir/background`). To add a "wallpaper" feel, reuse this path — do not modify the termux `TerminalView` internals.
+- **Custom font** loads from `filesDir/font.ttf` (Typeface.createFromFile), picker in `Customization.kt:204-251`. No bundled-font selector.
 
-## Release
+## Backlog (user-requested, not yet built)
+- **Custom wallpaper background**: terminal already supports a user image at `filesDir/background` (see above) — polish it as a labeled "wallpaper" with optional blur/alpha controls.
+- **GitHub Wiki**: fill `github.com/keyreylaa/Shellix/wiki` (Home, Setup, Features, Changelog) professionally.
+- **Release changelog**: keep release notes detailed/structured (version, date, changes).
 - Tag format `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`), pushed with `git push origin v1.0.0`.
 - GitHub Release is created from the green CI run's APK artifact. Asset name is `Shellix-vX.Y.Z.apk`.
 - Delete failed CI runs (`gh run delete <id>`) so the Actions list stays clean.

@@ -48,11 +48,13 @@ A Material 3 terminal emulator for Android that boots a real Ubuntu 24.04 Noble 
 - [x] Pure-Kotlin tar.gz extraction (no external `tar` binary)
 
 **Next**
+- [ ] Custom wallpaper background (use your own image behind the terminal, like a phone wallpaper)
 - [ ] Tab bar UI for sessions (visual session switcher)
 - [ ] Inline terminal image rendering (sixel / image preview)
 - [ ] Package categories / sources management UI
 - [ ] Per-app theme + font settings persistence
 - [ ] Wake-lock during active session for stability
+- [ ] GitHub Wiki (Setup, Features, Changelog)
 
 ## Credits
 - Fork of [ReTerminal](https://github.com/RohitKushvaha01/ReTerminal), which is a fork of [Termux](https://github.com/termux/termux-app).
