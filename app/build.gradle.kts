@@ -110,4 +110,5 @@ android {
 
 dependencies {
     implementation(project(":core:main"))
+    implementation(libs.androidx.core.ktx)
 }
