@@ -6,9 +6,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import com.rk.shellix.service.SessionService
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,6 +21,8 @@ fun TerminalTopBar(
     onMicClick: () -> Unit,
     color: Color
 ) {
+    var micActive by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     TopAppBar(
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.Transparent,
@@ -45,8 +49,27 @@ fun TerminalTopBar(
             IconButton(onClick = onAddClick) {
                 Icon(Icons.Default.Add, null, tint = color)
             }
-            IconButton(onClick = onMicClick) {
-                Icon(Icons.Default.Mic, contentDescription = "Voice", tint = color)
+            IconButton(
+                onClick = {
+                    micActive = true
+                    scope.launch {
+                        try {
+                            onMicClick()
+                        } finally {
+                            delay(2000)
+                            micActive = false
+                        }
+                    }
+                },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = if (micActive) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                )
+            ) {
+                Icon(
+                    Icons.Default.Mic,
+                    contentDescription = "Voice",
+                    tint = if (micActive) MaterialTheme.colorScheme.primary else color
+                )
             }
         }
     )
