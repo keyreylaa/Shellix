@@ -6,6 +6,7 @@ import android.graphics.BlurMaskFilter
 import android.os.Build
 import coil.imageLoader
 import coil.request.ImageRequest
+import coil.request.SuccessResult
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -211,8 +212,8 @@ private fun BackgroundImage(viewModel: TerminalViewModel) {
         if (file == null) { resolved = null; return@LaunchedEffect }
         withContext(Dispatchers.IO) {
             val bmp = try {
-                context.imageLoader.execute(ImageRequest.Builder(context).data(file).build())
-                    .image?.asImageBitmap()
+                val res = context.imageLoader.execute(ImageRequest.Builder(context).data(file).build())
+                if (res is coil.request.SuccessResult) res.image.asImageBitmap() else null
             } catch (e: Exception) { null }
             withContext(Dispatchers.Main) { resolved = bmp }
         }

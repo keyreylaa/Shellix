@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.google.android.material.R
+import com.rk.libcommons.child
 import com.rk.libcommons.localDir
 import com.rk.settings.Settings
 import com.rk.shellix.service.SessionService
@@ -103,7 +104,7 @@ class TerminalViewModel : ViewModel() {
         }
         TerminalColors.COLOR_SCHEME.updateWith(props)
 
-        currentBinder?.getService()?.allSessions()?.forEach { session ->
+        currentBinder?.allSessions()?.forEach { session ->
             session.emulator?.mColors?.updateWith(props)
             session.emulator?.onColorsChanged()
             terminalView?.onScreenUpdated()

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.imageLoader
 import coil.request.ImageRequest
+import coil.request.SuccessResult
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.palette.graphics.Palette
@@ -327,7 +328,7 @@ private fun BackgroundSection(viewModel: TerminalViewModel) {
                     val result = context.imageLoader.execute(
                         ImageRequest.Builder(context).data(imageFile).allowHardware(false).build()
                     )
-                    val bmp = result.image?.toBitmap()
+                    val bmp = if (result is coil.request.SuccessResult) result.image.toBitmap() else null
                     if (bmp == null) {
                         withContext(Dispatchers.Main) { toast("Failed to decode image (unsupported/corrupt format)") }
                         return@launch
