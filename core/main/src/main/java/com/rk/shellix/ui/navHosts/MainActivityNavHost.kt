@@ -17,6 +17,7 @@ import com.rk.shellix.ui.animations.NavigationAnimationTransitions
 import com.rk.shellix.ui.routes.MainActivityRoutes
 import com.rk.shellix.ui.screens.customization.Customization
 import com.rk.shellix.ui.screens.downloader.SetupScreen
+import com.rk.shellix.ui.screens.downloader.SetupWizard
 import com.rk.shellix.ui.screens.settings.Settings
 import com.rk.shellix.ui.screens.packages.PackagesScreen
 import com.rk.shellix.ui.screens.terminal.Rootfs
@@ -49,7 +50,11 @@ fun MainActivityNavHost(
                     showStatusBar
                 }
                 UpdateStatusBar(mainActivity.window, show)
-                TerminalScreen(mainActivity = mainActivity, navController = navController)
+                if (!Settings.setup_user_done) {
+                    SetupWizard(mainActivity = mainActivity, navController = navController)
+                } else {
+                    TerminalScreen(mainActivity = mainActivity, navController = navController)
+                }
             } else {
                 SetupScreen(mainActivity = mainActivity, navController = navController)
             }
