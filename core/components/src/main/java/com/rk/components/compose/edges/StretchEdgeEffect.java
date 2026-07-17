@@ -20,6 +20,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RenderNode;
+import android.os.Build;
 import android.view.animation.AnimationUtils;
 
 import androidx.annotation.IntDef;
@@ -172,7 +173,7 @@ public class StretchEdgeEffect extends EdgeEffectCompat {
 
     @EdgeEffectType
     private int getCurrentEdgeEffectBehavior() {
-        if (!ValueAnimator.areAnimatorsEnabled()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !ValueAnimator.areAnimatorsEnabled()) {
             return TYPE_NONE;
         } else {
             return TYPE_STRETCH;
