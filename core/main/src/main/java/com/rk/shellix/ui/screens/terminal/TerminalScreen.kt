@@ -30,8 +30,10 @@ import androidx.navigation.NavController
 import com.rk.components.compose.preferences.base.PreferenceGroup
 import com.rk.libcommons.child
 import com.rk.resources.strings
+import com.rk.libcommons.toast
 import com.rk.shellix.ui.activities.terminal.MainActivity
 import com.rk.shellix.ui.activities.terminal.MainViewModel
+import com.rk.shellix.ui.screens.terminal.VoiceInput
 import com.rk.shellix.ui.components.SetStatusBarTextColor
 import com.rk.shellix.ui.screens.settings.SettingsCard
 import com.rk.shellix.ui.screens.settings.WorkingMode
@@ -130,6 +132,18 @@ fun TerminalScreen(
                         sessionBinder = sessionBinder,
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onAddClick = { showAddDialog = true },
+                        onMicClick = {
+                            VoiceInput.recognize(
+                                activity = mainActivity,
+                                onResult = { text ->
+                                    val binder = sessionBinder
+                                    val id = binder?.getService()?.currentSession?.value?.first
+                                    val session = id?.let { binder.getSession(it) }
+                                    session?.emulator?.paste(text)
+                                },
+                                onError = { com.rk.libcommons.toast(it) }
+                            )
+                        },
                         color = TerminalUtils.getComposeColor()
                     )
                 }
