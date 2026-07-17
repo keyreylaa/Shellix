@@ -38,6 +38,7 @@ import com.rk.shellix.ui.activities.terminal.MainActivity
 import com.rk.shellix.ui.activities.terminal.MainViewModel
 import com.rk.shellix.ui.components.SettingsToggle
 import com.rk.shellix.ui.screens.terminal.*
+import com.rk.shellix.ui.diagnostics.DiagnosticsSection
 import com.rk.shellix.ui.theme.ThemeManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -94,6 +95,8 @@ fun Customization(
         PreferenceGroup(heading = "Terminal Theme") {
             TerminalThemeSection(terminalViewModel)
         }
+
+        DiagnosticsSection(terminalViewModel)
 
         PreferenceGroup {
             SettingsToggle(label = stringResource(strings.bell), description = stringResource(strings.bell_desc), showSwitch = true, default = Settings.bell, sideEffect = { Settings.bell = it })

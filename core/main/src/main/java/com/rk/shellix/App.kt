@@ -8,6 +8,7 @@ import com.github.anrwatchdog.ANRWatchDog
 import com.rk.libcommons.application
 import com.rk.resources.Res
 import com.rk.shellix.ui.screens.terminal.TerminalUtils
+import com.rk.shellix.ui.diagnostics.Diagnostics
 import com.rk.update.UpdateManager
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +45,9 @@ class App : Application() {
         }
 
         ANRWatchDog().start()
+
+        Diagnostics.installCrashHandler(this)
+        Diagnostics.lastCrashReport = Diagnostics.loadPersistedCrash(this)
 
         UpdateManager(this).onUpdate()
 
