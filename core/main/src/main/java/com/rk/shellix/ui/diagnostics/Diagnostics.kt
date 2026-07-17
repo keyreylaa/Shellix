@@ -3,7 +3,6 @@ package com.rk.shellix.ui.diagnostics
 import android.app.Application
 import android.os.Build
 import android.util.Log
-import com.rk.shellix.BuildConfig
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -23,7 +22,6 @@ object Diagnostics {
     private val buffer = LinkedBlockingDeque<String>(MAX_LINES)
 
     @Volatile var lastCrashReport: String? = null
-        private set
 
     var notifyOnPluginErrors: Boolean = true
 
@@ -70,7 +68,6 @@ object Diagnostics {
                 appendLine("Time: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}")
                 appendLine("Thread: ${thread.name}")
                 appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL} (API ${Build.VERSION.SDK_INT})")
-                appendLine("App version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
                 appendLine()
                 appendLine(Log.getStackTraceString(throwable))
             }
