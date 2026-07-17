@@ -25,7 +25,8 @@ private data class Pkg(val name: String, val version: String, val desc: String)
 @Composable
 fun PackagesScreen(mainActivity: MainActivity, navController: NavController) {
     val scope = rememberCoroutineScope()
-    val sessionBinder = remember { viewModel<MainViewModel>(mainActivity).sessionBinder }
+    val mainViewModel: MainViewModel = viewModel(mainActivity)
+    val sessionBinder = remember { mainViewModel.sessionBinder }
     var query by remember { mutableStateOf("") }
     var packages by remember { mutableStateOf<List<Pkg>>(emptyList()) }
     var busy by remember { mutableStateOf(false) }
