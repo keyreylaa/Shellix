@@ -36,8 +36,28 @@ object UbuntuCommand {
                     ?: return@withContext Result.failure(IllegalStateException("No emulator"))
 
                 val marker = "MARKER_${Random.nextInt(1_000_000, 9_999_999)}"
-                val wrapped = "echo $marker; sudo $command; echo $marker\n"
-                val before = emulator.getScreen().getTranscriptText()
+                val uidMarker = "UID_${Random.nextInt(1_000_000, 9_999_999)}"
+
+                // Detect whether we are already root so we don't blindly prefix sudo
+                // (sudo may be absent on a minimal rootfs). Runs as the session user.
+                session.write("echo $uidMarker; id -u; echo $uidMarker\n")
+                val uidStart = System.currentTimeMillis()
+                var uid = "0"
+                while (System.currentTimeMillis() - uidStart < TIMEOUT_MS) {
+                    delay(POLL_MS)
+                    val now = emulator.getScreen().getTranscriptText()
+                    val i1 = now.indexOf(uidMarker)
+                    val i2 = now.indexOf(uidMarker, i1 + uidMarker.length)
+                    if (i1 >= 0 && i2 > i1) {
+                        uid = now.substring(i1 + uidMarker.length, i2)
+                            .removePrefix("\r\n").removePrefix("\n")
+                            .trim().lineSequence().firstOrNull() ?: "0"
+                        break
+                    }
+                }
+                val prefix = if (uid == "0") "" else "sudo "
+
+                val wrapped = "echo $marker; ${prefix}$command; echo $marker\n"
 
                 session.write(wrapped)
 
