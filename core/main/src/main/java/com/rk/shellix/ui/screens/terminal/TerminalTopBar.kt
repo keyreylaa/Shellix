@@ -3,7 +3,7 @@ package com.rk.shellix.ui.screens.terminal
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -46,7 +46,7 @@ fun TerminalTopBar(
                 Icon(Icons.Default.Add, null, tint = color)
             }
             IconButton(onClick = onMicClick) {
-                Icon(Icons.Default.Build, contentDescription = "Voice", tint = color)
+                Icon(Icons.Default.Mic, contentDescription = "Voice", tint = color)
             }
         }
     )

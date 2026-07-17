@@ -41,7 +41,7 @@ jobs:
         run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build with Gradle
-        run: ./gradlew assembleRelease && mv app/build/outputs/apk/release/*.apk app/reterminal-${{ env.COMMIT_HASH }}.apk
+        run: ./gradlew assembleRelease && mv app/build/outputs/apk/release/*.apk app/shellix-${{ env.COMMIT_HASH }}.apk
         env:
           KEYSTORE_FILE: /tmp/xed.keystore
           SIGNING_PROPERTIES_FILE: /tmp/signing.properties
@@ -51,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Shellix-Release
-          path: app/reterminal-${{ env.COMMIT_HASH }}.apk
+          path: app/shellix-${{ env.COMMIT_HASH }}.apk
 
       - name: Delete xed.keystore and signing.properties
         run: rm /tmp/xed.keystore /tmp/signing.properties
