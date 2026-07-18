@@ -88,6 +88,7 @@ class TerminalViewModel : ViewModel() {
             virtualKeysViewClient = terminal.mTermSession?.let { VirtualKeysListener(it) }
         }
         
+        sessionBinder.getService().activeSessionId = sessionId
         sessionBinder.getService().currentSession.value = Pair(sessionId, sessionBinder.getService().sessionList[sessionId]!!.mode)
     }
 

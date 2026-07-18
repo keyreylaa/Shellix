@@ -1,9 +1,26 @@
 # Changelog
 
-## Shellix v1.3.0 — Performance, Audit & Polish
-_2026-07-18_
+## Shellix v1.3.0-beta — Performance, File Manager, Editor & Polish
+_2026-07-19_
 
 ### Added
+- **Built-in File Manager** (`core:filemanager`): dual-realm browsing (Ubuntu rootfs +
+  phone storage), copy/cut/paste, rename, delete, multi-select, create file/folder, with
+  a clear `noexec` warning chip when in FUSE phone storage. Destructive actions and
+  overwrites are confirmed first.
+- **Built-in Code Editor** (Sora Editor): line numbers, save, binary-file detection, and
+  lightweight syntax highlighting for ~20 languages (Kotlin, Java, JS/TS, Python, shell,
+  C/C++, Rust, Go, PHP, Ruby, Swift, SQL, CSS, Lua, Dart, JSON, YAML, TOML/INI, XML/HTML).
+  No native regex engine or grammar bundle — the terminal render path is untouched.
+- **About screen**: app version (via PackageManager), author, MIT license (+ Sora LGPL
+  note), lineage (ReTerminal <- Termux, Termux terminal engine, PRoot), GitHub / Issue /
+  Wiki links, and a live render of the GitHub Wiki `Home.md` (single source of truth).
+- **Proactive crash notice**: if a crash was recorded last run, a one-time dialog on next
+  launch offers to view the report (Diagnostics) or dismiss — shown once per distinct crash.
+- **Keep screen on** toggle (FLAG_KEEP_SCREEN_ON, no new permission).
+- **Copy** button on the in-app App logs and crash report dialogs.
+
+### Added (from 1.3.0 perf line)
 - **Session rename + smart names:** new sessions are auto-named `Session 1`, `Session 2`, …
   instead of raw ids (`main`, `main2`). **Long-press a session tab** (or drawer item) to rename
   it via a dialog. Names show in both the tab bar and the navigation drawer.

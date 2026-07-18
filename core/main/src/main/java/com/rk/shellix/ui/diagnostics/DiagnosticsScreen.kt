@@ -2,6 +2,7 @@ package com.rk.shellix.ui.diagnostics
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.rk.components.compose.preferences.base.PreferenceGroup
 import com.rk.components.compose.preferences.base.PreferenceTemplate
 import com.rk.components.compose.preferences.switch.PreferenceSwitch
+import com.blankj.utilcode.util.ClipboardUtils
 import com.rk.shellix.ui.screens.terminal.TerminalViewModel
 
 @Composable
@@ -79,10 +81,15 @@ private fun LogViewerDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            TextButton(onClick = {
-                Diagnostics.clear()
-                onDismiss()
-            }) { Text("Clear") }
+            Row {
+                TextButton(onClick = {
+                    ClipboardUtils.copyText("Shellix logs", lines.joinToString("\n"))
+                }) { Text("Copy") }
+                TextButton(onClick = {
+                    Diagnostics.clear()
+                    onDismiss()
+                }) { Text("Clear") }
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } },
         title = { Text("App logs") },
@@ -110,7 +117,16 @@ private fun CrashReportDialog(onDismiss: () -> Unit) {
     val report = Diagnostics.lastCrashReport
     AlertDialog(
         onDismissRequest = onDismiss,
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = {
+            Row {
+                if (report != null) {
+                    TextButton(onClick = {
+                        ClipboardUtils.copyText("Shellix crash report", report)
+                    }) { Text("Copy") }
+                }
+                TextButton(onClick = onDismiss) { Text("Close") }
+            }
+        },
         title = { Text("Last crash report") },
         text = {
             if (report == null) {

@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Choreographer
 import android.view.View
+import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -70,6 +71,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestPermission()
+        applyKeepScreenOn()
 
         if (intent.hasExtra("awake_intent")) {
             moveTaskToBack(true)
@@ -96,6 +98,36 @@ class MainActivity : ComponentActivity() {
                             terminalViewModel.terminalView?.clearFocus()
                             keyboardController?.hide()
                         }
+                    }
+
+                    // Proactive crash notice: show once per distinct crash from a previous run.
+                    val crashReport = remember { com.rk.shellix.ui.diagnostics.Diagnostics.lastCrashReport }
+                    val crashId = remember { com.rk.shellix.ui.diagnostics.Diagnostics.crashId(crashReport) }
+                    var showCrashNotice by remember {
+                        mutableStateOf(crashId.isNotEmpty() && crashId != com.rk.settings.Settings.last_seen_crash_id)
+                    }
+                    if (showCrashNotice) {
+                        androidx.compose.material3.AlertDialog(
+                            onDismissRequest = {
+                                com.rk.settings.Settings.last_seen_crash_id = crashId
+                                showCrashNotice = false
+                            },
+                            title = { androidx.compose.material3.Text("Shellix crashed last time") },
+                            text = { androidx.compose.material3.Text("A crash was recorded during your previous session. You can view the report for details.") },
+                            confirmButton = {
+                                androidx.compose.material3.TextButton(onClick = {
+                                    com.rk.settings.Settings.last_seen_crash_id = crashId
+                                    showCrashNotice = false
+                                    navController.navigate(MainActivityRoutes.Customization.route)
+                                }) { androidx.compose.material3.Text("View details") }
+                            },
+                            dismissButton = {
+                                androidx.compose.material3.TextButton(onClick = {
+                                    com.rk.settings.Settings.last_seen_crash_id = crashId
+                                    showCrashNotice = false
+                                }) { androidx.compose.material3.Text("Dismiss") }
+                            }
+                        )
                     }
                 }
             }
@@ -127,11 +159,26 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         isTerminalResumed = true
         Choreographer.getInstance().postFrameCallback(frameCallback)
+        applyKeepScreenOn()
         if (wasKeyboardOpen && !isKeyboardVisible) {
             terminalViewModel.terminalView?.let { terminalView ->
                 val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
                 imm.showSoftInput(terminalView, InputMethodManager.SHOW_IMPLICIT)
             }
+        }
+    }
+
+    /**
+     * Apply the user's "Keep screen on" preference at the window level using
+     * FLAG_KEEP_SCREEN_ON (no permission, battery-friendly). When off, the flag is
+     * cleared; the terminal view's own keepScreenOn (active while a session is focused)
+     * still applies as before.
+     */
+    fun applyKeepScreenOn() {
+        if (com.rk.settings.Settings.keep_screen_on) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 

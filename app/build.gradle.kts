@@ -84,8 +84,8 @@ android {
         applicationId = "com.shellix.terminal"
         minSdk = 26
         targetSdk = 37
-        versionCode = 4
-        versionName = "1.3.0"
+        versionCode = 5
+        versionName = "1.3.0-beta"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -103,6 +103,7 @@ android {
 
     
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -123,4 +124,5 @@ android {
 dependencies {
     implementation(project(":core:main"))
     implementation(libs.androidx.core.ktx)
+    coreLibraryDesugaring(libs.desugar)
 }

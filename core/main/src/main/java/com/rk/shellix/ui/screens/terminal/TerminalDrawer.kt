@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -65,6 +66,12 @@ fun TerminalDrawer(
                         navController.navigate(MainActivityRoutes.Packages.route)
                     }) {
                         Icon(Icons.Default.List, contentDescription = "Packages")
+                    }
+
+                    IconButton(onClick = {
+                        navController.navigate(MainActivityRoutes.FileManager.route)
+                    }) {
+                        Icon(Icons.Outlined.Folder, contentDescription = "File Manager")
                     }
 
                     IconButton(onClick = onClearClick) {

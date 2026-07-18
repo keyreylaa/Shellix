@@ -48,6 +48,7 @@ android {
 
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -89,7 +90,10 @@ dependencies {
     implementation(project(":core:resources"))
     implementation(project(":core:components"))
     implementation(project(":core:proot"))
+    implementation(project(":core:filemanager"))
+    coreLibraryDesugaring(libs.desugar)
     implementation("org.apache.commons:commons-compress:1.26.0")
     implementation("com.github.termux.termux-app:terminal-view:v0.118.3")
     implementation("com.github.termux.termux-app:terminal-emulator:v0.118.3")
+    testImplementation(libs.junit)
 }

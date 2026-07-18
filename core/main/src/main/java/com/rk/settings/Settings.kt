@@ -75,8 +75,16 @@ object Settings {
         set(value) = Preference.setBoolean(key = "blackText",value)
 
     var terminal_color_scheme
-        get() = Preference.getString(key = "terminal_color_scheme", default = "Default")
+        get() = Preference.getString(key = "terminal_color_scheme", default = "Soft Dark")
         set(value) = Preference.setString(key = "terminal_color_scheme", value)
+
+    var keep_screen_on
+        get() = Preference.getBoolean(key = "keep_screen_on", default = false)
+        set(value) = Preference.setBoolean(key = "keep_screen_on",value)
+
+    var last_seen_crash_id: String
+        get() = Preference.getString(key = "last_seen_crash_id", default = "")
+        set(value) = Preference.setString(key = "last_seen_crash_id", value)
 
     var bell
         get() = Preference.getBoolean(key = "bell", default = false)

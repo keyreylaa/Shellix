@@ -26,6 +26,11 @@ class SessionService : Service() {
     val sessionList = mutableStateMapOf<String, SessionMeta>()
     var currentSession = mutableStateOf(Pair("main", com.rk.settings.Settings.working_Mode))
 
+    // Plain volatile mirror of the active session id, read on the hot render path
+    // (TerminalBackEnd.onTextChanged) to avoid touching Compose state / map lookups
+    // per output line. Updated whenever the active session changes.
+    @Volatile var activeSessionId: String = "main"
+
     inner class SessionBinder : Binder() {
         fun getService(): SessionService = this@SessionService
         

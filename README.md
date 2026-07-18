@@ -1,94 +1,150 @@
 # Shellix
 
-[![Build](https://github.com/keyreylaa/Shellix/actions/workflows/android.yml/badge.svg)](https://github.com/keyreylaa/Shellix/actions)
-[![Verify](https://github.com/keyreylaa/Shellix/actions/workflows/verify.yml/badge.svg)](https://github.com/keyreylaa/Shellix/actions)
+[![Build](https://github.com/keyreylaa/Shellix/actions/workflows/android.yml/badge.svg)](https://github.com/keyreylaa/Shellix/actions/workflows/android.yml)
+[![Verify](https://github.com/keyreylaa/Shellix/actions/workflows/verify.yml/badge.svg)](https://github.com/keyreylaa/Shellix/actions/workflows/verify.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/keyreylaa/Shellix/blob/master/LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Android-green.svg)](https://github.com/keyreylaa/Shellix)
-[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/keyreylaa/Shellix/releases)
-[![PRoot](https://img.shields.io/badge/sandbox-PRoot-orange.svg)](https://github.com/keyreylaa/Shellix)
-[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20Noble-E95420.svg)](https://github.com/keyreylaa/Shellix)
+[![Platform](https://img.shields.io/badge/platform-Android%206.0%2B-green.svg)](https://github.com/keyreylaa/Shellix)
+[![Version](https://img.shields.io/badge/version-1.3.0--beta-blue.svg)](https://github.com/keyreylaa/Shellix/releases)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.x-7F52FF.svg)](https://kotlinlang.org)
+[![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20Noble-E95420.svg)](https://ubuntu.com)
+[![PRoot](https://img.shields.io/badge/sandbox-PRoot-orange.svg)](https://proot-me.github.io)
 
-A Material 3 terminal emulator for Android that boots a real Ubuntu 24.04 Noble environment via PRoot.
+**A pocket Linux workstation.** Shellix boots a real **Ubuntu 24.04 (Noble Numbat)**
+environment on your Android phone via PRoot — no root, no VPS — wrapped in a fast,
+Material 3 interface with a built‑in file manager and code editor.
 
-**Shellix** is a sleek, Material 3 terminal emulator for Android that boots a real **Ubuntu 24.04 (Noble Numbat)** Linux environment via PRoot — not just a plain Android shell. Built on Termux's battle-tested TerminalView.
+## Why Shellix?
 
-> Note: Shellix runs Ubuntu over PRoot on top of the Android kernel. It is ideal for learning Linux, shell scripting, and light development. Heavy compilation, GPU workloads, and low-port networking need a rooted device or a VPS.
+Android ships a locked‑down shell with no package manager, no real filesystem tools,
+and no dev environment. Shellix fixes that: it gives you a genuine `apt`‑powered Ubuntu
+userland where you can install tools, write and run scripts, and browse/edit files —
+all on a device you already carry. It targets learners, tinkerers, and developers who
+want a Linux scratchpad in their pocket, with the UI staying smooth even while a heavy
+job runs in the background.
 
-## Features
-- **Ubuntu 24.04 Noble** rootfs downloaded on first run (SHA-256 verified), with a first-boot **setup wizard** that creates a sudo user.
-- **Material 3** UI with light/dark/OLED and **Dynamic Color (Material You)** themes.
-- **App Theme controls** (Customization → App Theme): Light/System/Dark toggle, OLED mode, Monet toggle.
-- **Dracula terminal theme** preset (plus default), switchable in Customization.
-- **Virtual keys** including a **Shift** key, Ctrl, Alt, arrows, and function keys.
-- **Multiple sessions** managed from a navigation drawer + session tab bar (bottom strip).
-- **Configurable keyboard shortcuts** (paste, new/close/switch session).
-- **Packages tab** — browse installed APT packages, search apt-cache, install/uninstall/update with safety preview.
-- **Voice input** — mic button in top bar, speech-to-text pasted into terminal (editable before send).
-- **Clear terminal** — one-tap clear from drawer.
-- **Custom wallpaper background** — pick your own image with live blur + alpha sliders.
-- **Wake-lock** — screen stays on while a terminal session is active.
-- **Full storage access** via PRoot bind mounts + `MANAGE_EXTERNAL_STORAGE`.
+> Shellix runs Ubuntu over PRoot on top of the Android kernel. It is ideal for learning
+> Linux, shell scripting, and light development. Heavy compilation, GPU workloads, and
+> low‑port networking still benefit from a rooted device or a VPS.
+
+## Highlights
+
+- **Real Ubuntu 24.04 Noble** rootfs, downloaded on first run (SHA‑256 verified), with a
+  first‑boot **setup wizard** that creates a `sudo` user.
+- **Snappy under load** — terminal redraws are coalesced to one per frame, background
+  session tabs are render‑throttled, and PRoot is launched deprioritized (`nice` +
+  `ionice`) so the UI stays fluid while builds/installs grind. A built‑in **frame‑drop
+  counter** (Diagnostics → Performance) makes this measurable.
+- **Built‑in File Manager** — browse both realms (Ubuntu rootfs *and* phone storage),
+  copy/cut/paste/rename/delete, multi‑select, create files/folders, with a clear
+  `noexec` warning when you're in FUSE phone storage.
+- **Built‑in Code Editor** — line numbers, save, binary‑file detection, and lightweight
+  syntax highlighting for ~20 languages (Kotlin, Python, JS/TS, C/C++, Rust, Go, shell,
+  YAML/JSON/TOML, and more) — all without bloating the APK or touching the terminal
+  render path.
+- **Unified Theme settings** — one place for interface theme (Light/System/Dark, OLED,
+  Material You) and terminal color scheme. Ships a soft, low‑glare **Soft Dark** default.
+- **Multiple renameable sessions** — long‑press a tab to rename; smart `Session N` names.
+- **Packages tab** — browse/search APT packages and install/uninstall/update with a
+  safety preview.
+- **Voice input, custom wallpaper, custom font, Keep‑screen‑on**, configurable keyboard
+  shortcuts, and an **About** screen that renders the live project Wiki.
+- **Proactive crash notice** — if the app crashed last run, you're offered the report on
+  next launch (once per crash), backed by an in‑app diagnostics log you can copy.
+
+## Architecture
+
+Shellix is a Gradle multi‑module Android app (Kotlin + Jetpack Compose + Termux
+terminal engine). Modules are split so heavy or optional features stay isolated:
+
+```
+Shellix/
+├── app/                     # Application module (manifest, signing, entry Activity)
+└── core/
+    ├── main/                # Terminal UI, sessions, packages, settings, About, nav
+    ├── components/          # Reusable Compose preference/UI components
+    ├── resources/           # Strings, drawables, shared resources
+    ├── proot/               # Native PRoot engine (C/JNI) + launch scripts
+    └── filemanager/         # Self-contained File Manager + Sora-based code editor
+```
+
+Key design points:
+
+- **PRoot** (`core/proot`, native C) provides the Ubuntu sandbox; launch args live in
+  `core/main/.../assets/init-host.sh`. The terminal is Termux's `terminal-view` /
+  `terminal-emulator` (AAR).
+- **Render hot path is guarded**: `TerminalBackEnd.onTextChanged` coalesces redraws per
+  frame, skips background tabs, and reads the active session via a cached id — no Compose
+  state churn per output chunk.
+- **`core:filemanager` is dependency‑isolated**: it owns the Sora Editor (LGPL) and its
+  highlighter, and does **not** depend on `core:main`, so the editor stack never leaks
+  into the terminal path. `core:main` wires it into navigation.
+- **Single source of truth for docs**: the About screen renders the GitHub Wiki `Home.md`
+  live, so in‑app help follows the Wiki without manual edits.
 
 ## Getting Started
-1. **Download the APK**: [Shellix-v1.1.0.apk](https://github.com/keyreylaa/Shellix/releases/download/v1.1.0/Shellix-v1.1.0.apk) (or grab the latest from [GitHub Releases](https://github.com/keyreylaa/Shellix/releases)).
-2. Install it (you may need to allow "Install from unknown sources" in Android settings).
-3. On first launch, Shellix downloads the Ubuntu Noble rootfs (needs internet), extracts it, and opens a **setup wizard**.
-4. Enter a username and password for your sudo user (defaults: user `shellix`, auto-generated password shown once — save it! You can also type your own password).
-5. You boot into Ubuntu bash as that user. Run `sudo apt update && sudo apt upgrade` to get started.
 
-> Having trouble? If setup fails to extract the rootfs, the error screen shows a **copyable** message (tap **Copy error** and share it) — usually it means the download was incomplete or storage is full.
+1. **Download the APK** from [GitHub Releases](https://github.com/keyreylaa/Shellix/releases).
+2. Install it (you may need to allow "Install from unknown sources").
+3. On first launch, Shellix downloads the Ubuntu Noble rootfs (needs internet), extracts
+   it (pure‑Kotlin, no external `tar`), and opens the **setup wizard**.
+4. Choose a username/password for your `sudo` user (default user `shellix`, with an
+   auto‑generated password shown once — save it).
+5. You boot into Ubuntu bash. Run `sudo apt update && sudo apt upgrade` to begin.
+
+> Setup trouble? The error screen shows a **copyable** message (tap **Copy error**).
+> Usually it means an incomplete download or full storage.
 
 ## Build from source
-- Requires Android SDK + JDK 17.
-- `./gradlew assembleDebug` (or use the GitHub Actions workflow).
-- The app is built via GitHub Actions (`.github/workflows/android.yml`). Unit tests run separately in `.github/workflows/verify.yml`.
-- Local verification: `./verify.sh` (checks file structure, known bug patterns, syntax).
 
-## v1.1.0 Changes
-- **Fix: User switch after setup** — first-boot user creation now correctly drops into the non-root user immediately (init.sh re-checks `/etc/shellix_default_user` after setup-user.sh runs).
-- **Fix: Wallpaper visibility** — default wallpaper alpha changed from 0 (invisible) to 1 (fully opaque).
-- **Fix: Package list parsing** — UbuntuCommand marker detection off-by-one fixed (was capturing command echo instead of actual output). All packages now properly appear.
-- **Fix: App Theme controls** — Added Light/System/Dark toggle, OLED mode, and Monet (Material You) toggles in Customization.
-- **Improve: Package detail view** — tapping a package opens a rich bottom sheet with name, section, full description, version, Close button, and Install/Uninstall buttons.
-- **New: Verification suite** — `verify.sh` checks all file structure, known bug patterns, shell syntax, and Kotlin syntax. `verify.yml` workflow runs Gradle unit tests on CI.
-- **Version bump** — 1.0.0 → 1.1.0.
+- Requires Android SDK + **JDK 17** (the Gradle daemon JVM must be 17; 21 currently
+  breaks the build).
+- `./gradlew assembleDebug` / `assembleRelease` — or use GitHub Actions.
+- **CI**: `.github/workflows/verify.yml` runs unit tests + lint on every push;
+  `.github/workflows/android.yml` builds and signs the release APK on `master`.
+- **Local pre‑flight**: `./verify.sh` — a fast (<a few seconds) static simulation that
+  catches many build‑only failures without a full compile: module graph / project deps,
+  core‑library‑desugaring consistency, version‑catalog references, cross‑module import
+  boundaries, known‑bug regression guards, and shell syntax. Structured output with a
+  pass/warn/fail summary and proper exit codes. Set `VERIFY_KOTLIN=1` for a kotlinc probe.
 
 ## Roadmap
 
-**v1.0.0**
-- [x] Ubuntu 24.04 Noble rootfs + first-run setup wizard (sudo user)
-- [x] Pure-Kotlin tar.gz extraction (no external `tar` binary)
-- [x] Packages tab (browse / install / uninstall / update apt packages)
-- [x] Clear terminal action
-- [x] Voice-to-command input (mic → terminal, editable before send)
-- [x] Dracula terminal theme + Shift key
-- [x] GitHub Wiki (Setup, Features, Changelog)
+**v1.0.0 – v1.1.0** (shipped)
+- [x] Ubuntu 24.04 Noble rootfs + first‑run setup wizard (sudo user)
+- [x] Pure‑Kotlin tar.gz extraction (no external `tar`)
+- [x] Packages tab, Clear terminal, Voice input, Dracula theme + Shift key
+- [x] App Theme controls, rich package detail sheet, `verify.sh` + CI
 
-**v1.1.0**
-- [x] Bugfix: user stays root after setup (now correctly drops to non-root)
-- [x] Bugfix: wallpaper invisible by default (alpha default 0 → 1)
-- [x] Bugfix: package list not showing (UbuntuCommand marker off-by-one)
-- [x] App Theme controls (Light/System/Dark, OLED, Monet) in Customization
-- [x] Rich package detail bottom sheet (description, section, close, install/uninstall)
-- [x] Local verification suite (`verify.sh`) + CI verify workflow
-- [x] Performance: SideEffect for virtual keys, key() for stable BackgroundImage
+**v1.2.0** (shipped) — build/size + security hardening
+- [x] R8 minify/shrink + full mode, arm64‑only ABI, en‑only resources
+- [x] Quoted `UbuntuCommand`, no plaintext password at rest
 
-**v1.3.0 — Performance, Audit & Polish**
-- [x] Coalesced terminal redraws (one per frame, not per line) — smooth under heavy output
-- [x] Visibility-aware rendering: active tab full redraw, background tabs throttled (5-session case)
-- [x] Off-main-thread command polling in `UbuntuCommand`
-- [x] PRoot launched with `nice -n 10` + duplicate bind mount removed
-- [x] Session rename (long-press tab/drawer) + smart default names (`Session N`)
-- [x] Diagnostics: frame-drop counter + Performance section
-- [x] Demote benign `ptrace(PEEKDATA): No such process` warning to verbose
+**v1.3.0‑beta** (this release)
+- [x] Performance: per‑frame redraw coalescing, background‑tab throttling, off‑main
+      command polling, `nice`/`ionice` PRoot launch, frame‑drop diagnostics
+- [x] Session rename + smart default names
+- [x] Unified Theme settings + **Soft Dark** default scheme
+- [x] **File Manager** (dual‑realm browse, full file ops, multi‑select, noexec warning)
+- [x] **Code Editor** (line numbers, save, binary detection, ~20‑language highlighting)
+- [x] **About** screen (version, lineage, links, live Wiki) + **proactive crash notice**
+- [x] Keep‑screen‑on toggle, copyable app logs
+- [x] `ptrace(PEEKDATA)` log‑noise demoted; hardened `verify.sh`
 
 **Blocked / deferred**
-- [ ] Inline terminal image rendering (sixel) — blocked: needs a sixel-capable `terminal-emulator` AAR upgrade (risky, no local build to verify). Revisit when upgrading Termux libs.
+- [ ] Inline terminal image rendering (sixel) — needs a sixel‑capable `terminal‑emulator`
+      AAR upgrade (risky; revisit when upgrading Termux libs).
+- [ ] Full‑grammar (TextMate/TreeSitter) editor highlighting — deferred to keep the APK
+      small and the terminal render path untouched (current highlighter is heuristic).
 
 ## Credits
-- Fork of [ReTerminal](https://github.com/RohitKushvaha01/ReTerminal), which is a fork of [Termux](https://github.com/termux/termux-app).
+
+- Fork of [ReTerminal](https://github.com/RohitKushvaha01/ReTerminal), itself a fork of
+  [Termux](https://github.com/termux/termux-app).
 - Terminal engine: Termux `terminal-view` / `terminal-emulator`.
-- PRoot sandboxing.
+- Code editor: [Sora Editor](https://github.com/Rosemoe/sora-editor) (LGPL‑2.1).
+- Sandbox: [PRoot](https://proot-me.github.io).
 
 ## License
-See repository license file.
+
+Shellix is released under the **MIT License** (see [LICENSE](LICENSE)). The bundled Sora
+Editor is LGPL‑2.1; it is used as an unmodified library dependency.

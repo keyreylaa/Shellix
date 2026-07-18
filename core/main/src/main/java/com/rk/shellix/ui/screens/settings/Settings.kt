@@ -122,6 +122,17 @@ fun Settings(
                     )
                 }
             )
+            SettingsCard(
+                title = { Text("About") },
+                onClick = { navController.navigate(MainActivityRoutes.About.route) },
+                endWidget = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = null,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                }
+            )
         }
 
         PreferenceGroup {

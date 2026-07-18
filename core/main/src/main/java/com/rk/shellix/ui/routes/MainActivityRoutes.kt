@@ -5,4 +5,6 @@ sealed class MainActivityRoutes(val route: String) {
     data object Customization : MainActivityRoutes("customization")
     data object MainScreen : MainActivityRoutes("main")
     data object Packages : MainActivityRoutes("packages")
+    data object FileManager : MainActivityRoutes("filemanager")
+    data object About : MainActivityRoutes("about")
 }

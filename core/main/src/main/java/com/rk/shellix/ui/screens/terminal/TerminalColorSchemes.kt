@@ -25,6 +25,28 @@ data class ColorScheme(
 object TerminalColorSchemes {
     val DEFAULT = ColorScheme("Default")
 
+    /**
+     * Soft Dark — the fresh-install default. A muted, low-glare dark palette inspired by
+     * the contrast proportions of Rose Pine Moon and Catppuccin Macchiato (not copied):
+     * a soft blue-grey background (not pure black) with warm dimmed-grey text (not pure
+     * white), and pastel ANSI colors so colored output stays distinguishable without being
+     * harsh. Foreground/background contrast is ~9.5:1 (well above WCAG AA 4.5:1).
+     */
+    val SOFT_DARK = ColorScheme(
+        name = "Soft Dark",
+        background = "2a2a38",
+        foreground = "d4d2e0",
+        cursor = "d4d2e0",
+        colors = listOf(
+            // normal: black, red, green, yellow, blue, magenta, cyan, white
+            "3a3a4a", "d97e88", "8fc793", "d8c58f",
+            "8aa8d8", "bb98cf", "8fc6c8", "c8c6d4",
+            // bright variants (slightly lighter/pastel)
+            "5a5a6e", "e58a95", "9fd6a0", "e6d6a0",
+            "9ab8e8", "cba6de", "9fd4d6", "e6e4ee"
+        )
+    )
+
     val DRACULA = ColorScheme(
         name = "Dracula",
         background = "282a36",
@@ -90,7 +112,7 @@ object TerminalColorSchemes {
         )
     )
 
-    val ALL = listOf(DEFAULT, DRACULA, NORD, ONE_DARK, TOKYO_NIGHT, CATPPPUCCIN)
+    val ALL = listOf(SOFT_DARK, DEFAULT, DRACULA, NORD, ONE_DARK, TOKYO_NIGHT, CATPPPUCCIN)
 
     fun byName(name: String): ColorScheme = ALL.firstOrNull { it.name == name } ?: DEFAULT
 }

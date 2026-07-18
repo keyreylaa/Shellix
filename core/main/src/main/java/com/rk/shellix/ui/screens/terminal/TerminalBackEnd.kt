@@ -36,12 +36,23 @@ class TerminalBackEnd(
     private val terminalViewModel by lazy { ViewModelProvider(activity)[TerminalViewModel::class.java] }
 
     @Volatile private var redrawScheduled = false
-    @Volatile private var lastBgRedrawMs = 0L
+    private var lastRedrawMs = 0L
+
+    // One frame budget (~60fps). Terminal output is coalesced so at most one redraw
+    // happens per this window, even when a build spews thousands of lines/second.
+    private val frameBudgetMs = 16L
+
+    private val flushRedraw = Runnable {
+        redrawScheduled = false
+        lastRedrawMs = SystemClock.uptimeMillis()
+        terminal.onScreenUpdated()
+    }
 
     private fun isActiveSession(session: TerminalSession): Boolean {
         val binder = activity.viewModel.sessionBinder ?: return true
-        val currentId = binder.getService().currentSession.value.first
-        return binder.getSession(currentId) === session
+        // Cheap: reference-compare the changed session against the active one via the
+        // cached id (single hashmap get, no Compose-state read on the hot path).
+        return binder.getSession(binder.getService().activeSessionId) === session
     }
 
     override fun onTextChanged(changedSession: TerminalSession) {
@@ -49,20 +60,22 @@ class TerminalBackEnd(
         if (!activity.isTerminalResumed) return
 
         if (isActiveSession(changedSession)) {
-            // Active tab: coalesce a burst of output lines into one redraw per frame (~16ms).
+            // Active tab: explicit time-based debounce. Multiple output bursts inside one
+            // frame budget collapse into a single onScreenUpdated(); a trailing flush is
+            // always scheduled so the final output is never dropped.
+            com.rk.shellix.ui.diagnostics.PerfStats.backgroundRenderPaused = false
             if (redrawScheduled) return
             redrawScheduled = true
-            terminal.post {
-                redrawScheduled = false
-                terminal.onScreenUpdated()
-            }
+            val sinceLast = SystemClock.uptimeMillis() - lastRedrawMs
+            val delay = if (sinceLast >= frameBudgetMs) 0L else frameBudgetMs - sinceLast
+            terminal.removeCallbacks(flushRedraw)
+            terminal.postDelayed(flushRedraw, delay)
         } else {
-            // Background tab (5-session case): PRoot keeps running, but throttle redraw to 1/500ms.
+            // Background tab (5-session case): do NOT redraw at all. The PRoot process keeps
+            // running and the emulator's screen buffer keeps updating; we simply skip the UI
+            // invalidation. When the user switches back, changeSession() forces one full
+            // redraw so the tab shows current output. This keeps the UI thread free under load.
             com.rk.shellix.ui.diagnostics.PerfStats.backgroundRenderPaused = true
-            val now = SystemClock.uptimeMillis()
-            if (now - lastBgRedrawMs < 500L) return
-            lastBgRedrawMs = now
-            terminal.post { terminal.onScreenUpdated() }
         }
     }
 
