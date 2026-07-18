@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Choreographer
 import android.view.View
+import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -70,6 +71,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestPermission()
+        applyKeepScreenOn()
 
         if (intent.hasExtra("awake_intent")) {
             moveTaskToBack(true)
@@ -127,11 +129,26 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         isTerminalResumed = true
         Choreographer.getInstance().postFrameCallback(frameCallback)
+        applyKeepScreenOn()
         if (wasKeyboardOpen && !isKeyboardVisible) {
             terminalViewModel.terminalView?.let { terminalView ->
                 val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
                 imm.showSoftInput(terminalView, InputMethodManager.SHOW_IMPLICIT)
             }
+        }
+    }
+
+    /**
+     * Apply the user's "Keep screen on" preference at the window level using
+     * FLAG_KEEP_SCREEN_ON (no permission, battery-friendly). When off, the flag is
+     * cleared; the terminal view's own keepScreenOn (active while a session is focused)
+     * still applies as before.
+     */
+    fun applyKeepScreenOn() {
+        if (com.rk.settings.Settings.keep_screen_on) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 
