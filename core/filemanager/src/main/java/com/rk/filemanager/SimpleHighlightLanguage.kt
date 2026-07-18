@@ -24,7 +24,6 @@ class SimpleHighlightLanguage(private val spec: LangSpec) : Language {
     private val analyzer = object : SimpleAnalyzeManager<Unit>() {
         override fun analyze(text: StringBuilder, delegate: Delegate<Unit>): Styles {
             val builder = MappedSpans.Builder()
-            val lines = text.toString().split("\n")
             var inBlock = false
             val kw = TextStyle.makeStyle(EditorColorScheme.KEYWORD)
             val comment = TextStyle.makeStyle(EditorColorScheme.COMMENT)
@@ -32,11 +31,21 @@ class SimpleHighlightLanguage(private val spec: LangSpec) : Language {
             val num = TextStyle.makeStyle(EditorColorScheme.LITERAL)
             val normal = TextStyle.makeStyle(EditorColorScheme.TEXT_NORMAL)
 
-            for (lineIdx in lines.indices) {
+            // Scan lines manually and hand tokenizeLine a zero-copy substring view
+            // instead of text.toString().split("\n"). split() allocates a String[]
+            // plus a copy per line on every analyze pass (analyze re-runs on each text
+            // change), which is the main cost for large files. substring() is a view,
+            // so this keeps large-file tokenize cheap (Tugas 6, F1).
+            val n = text.length
+            var lineIdx = 0
+            var start = 0
+            while (start <= n) {
                 if (delegate.isCancelled) break
+                var end = start
+                while (end < n && text[end] != '\n') end++
                 // every line needs a span starting at column 0
                 builder.addIfNeeded(lineIdx, 0, normal)
-                val (tokens, next) = tokenizeLine(lines[lineIdx], spec, inBlock)
+                val (tokens, next) = tokenizeLine(text.substring(start, end), spec, inBlock)
                 inBlock = next
                 for (t in tokens) {
                     val style = when (t.type) {
@@ -50,6 +59,9 @@ class SimpleHighlightLanguage(private val spec: LangSpec) : Language {
                     // reset to normal after the token
                     builder.addIfNeeded(lineIdx, t.end, normal)
                 }
+                lineIdx++
+                if (end >= n) break
+                start = end + 1
             }
             return Styles(builder.build())
         }

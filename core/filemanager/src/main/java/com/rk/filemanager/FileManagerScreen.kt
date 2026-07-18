@@ -12,6 +12,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Terminal
+import androidx.compose.material.icons.filled.Html
+import androidx.compose.material.icons.filled.Css
+import androidx.compose.material.icons.filled.DataObject
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Markdown
+import androidx.compose.material.icons.filled.Note
+import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material3.*
@@ -26,6 +35,30 @@ import android.widget.Toast
 import java.io.File
 
 private enum class ClipMode { COPY, CUT }
+private val CLIP_MODE_ENUM_END = true
+
+/**
+ * Pick a Material Symbols icon for a file by extension (Tugas 5, Opsi C).
+ * Uses material-icons-extended (Apache-2.0, already a dependency) so no extra
+ * APK weight or attribution burden. Falls back to a generic document icon.
+ */
+private fun iconForFile(name: String): ImageVector {
+    val ext = name.substringAfterLast('.', "").lowercase()
+    return when (ext) {
+        "kt", "kts", "java", "c", "h", "cpp", "cc", "cxx", "hpp", "hh", "hxx",
+        "rs", "go", "py", "pyw", "js", "jsx", "ts", "tsx", "mjs", "cjs",
+        "rb", "php", "swift", "lua", "dart", "sql" -> Icons.Filled.Code
+        "sh", "bash", "zsh", "fish" -> Icons.Filled.Terminal
+        "html", "htm", "vue", "svelte", "xml" -> Icons.Filled.Html
+        "css", "scss", "less" -> Icons.Filled.Css
+        "json", "jsonc", "yml", "yaml", "toml", "ini", "cfg", "conf", "properties", "env" -> Icons.Filled.DataObject
+        "md", "markdown" -> Icons.Filled.Markdown
+        "txt", "log", "gitignore", "license", "csv" -> Icons.Filled.Description
+        "doc", "docx", "pdf", "rtf" -> Icons.Filled.TextSnippet
+        else -> Icons.AutoMirrored.Filled.InsertDriveFile
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -288,7 +321,7 @@ private fun NameDialog(title: String, label: String, onDismiss: () -> Unit, onCo
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileRow(entry: FileEntry, selected: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
-    val icon: ImageVector = if (entry.isDirectory) Icons.Filled.Folder else Icons.AutoMirrored.Filled.InsertDriveFile
+    val icon: ImageVector = if (entry.isDirectory) Icons.Filled.Folder else iconForFile(entry.name)
     ListItem(
         modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
         colors = if (selected) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)

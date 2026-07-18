@@ -15,6 +15,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import io.github.rosemoe.sora.widget.CodeEditor
+import io.github.rosemoe.sora.lang.EmptyLanguage
 import java.io.File
 
 /**
@@ -72,12 +73,24 @@ fun CodeEditorScreen(file: File, onBack: () -> Unit) {
                     factory = { ctx ->
                         CodeEditor(ctx).apply {
                             setText(runCatching { file.readText() }.getOrDefault(""))
+                            // Dark editor matching the app's Soft Dark palette (Tugas 4).
+                            setColorScheme(SoftDarkScheme())
+                            // Cut per-line overdraw/render cost while scrolling large files (Tugas 6, F3).
+                            setHighlightCurrentLine(false)
+                            setCursorAnimationEnabled(false)
+                            setOverScrollEnabled(false)
                             // line numbers are enabled by default in Sora Editor.
                             // Lightweight keyword/comment/string highlighter chosen by file
                             // extension — no native regex engine, so it never touches the
                             // terminal render path or bloats the APK.
                             val spec = LangSpec.forFile(file.name)
-                            setEditorLanguage(SimpleHighlightLanguage(spec))
+                            // Skip highlighting for very large files so the editor still opens
+                            // and scrolls smoothly instead of janking on full-file tokenize (Tugas 6, F2).
+                            if (file.length() <= 1_000_000) {
+                                setEditorLanguage(SimpleHighlightLanguage(spec))
+                            } else {
+                                setEditorLanguage(EmptyLanguage())
+                            }
                             editorRef = this
                         }
                     }
