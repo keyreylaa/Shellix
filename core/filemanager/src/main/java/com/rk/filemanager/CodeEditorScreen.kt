@@ -72,7 +72,12 @@ fun CodeEditorScreen(file: File, onBack: () -> Unit) {
                     factory = { ctx ->
                         CodeEditor(ctx).apply {
                             setText(runCatching { file.readText() }.getOrDefault(""))
-                            // line numbers are enabled by default in Sora Editor
+                            // line numbers are enabled by default in Sora Editor.
+                            // Lightweight keyword/comment/string highlighter chosen by file
+                            // extension — no native regex engine, so it never touches the
+                            // terminal render path or bloats the APK.
+                            val spec = LangSpec.forFile(file.name)
+                            setEditorLanguage(SimpleHighlightLanguage(spec))
                             editorRef = this
                         }
                     }
