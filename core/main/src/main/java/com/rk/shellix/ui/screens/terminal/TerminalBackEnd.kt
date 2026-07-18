@@ -13,6 +13,7 @@ import com.blankj.utilcode.util.ClipboardUtils
 import com.blankj.utilcode.util.KeyboardUtils
 import com.rk.libcommons.child
 import com.rk.settings.Settings
+import com.rk.shellix.ui.diagnostics.AppLog
 import com.rk.shellix.ui.activities.terminal.MainActivity
 import com.rk.shellix.ui.screens.terminal.virtualkeys.SpecialButton
 import com.termux.terminal.TerminalEmulator
@@ -108,7 +109,17 @@ class TerminalBackEnd(
     override fun getTerminalCursorStyle(): Int = TerminalEmulator.DEFAULT_TERMINAL_CURSOR_STYLE
 
     override fun logError(tag: String?, message: String?) { Log.e(tag ?: "Terminal", message ?: "") }
-    override fun logWarn(tag: String?, message: String?) { Log.w(tag ?: "Terminal", message ?: "") }
+    override fun logWarn(tag: String?, message: String?) {
+        val t = tag ?: "Terminal"
+        val m = message ?: ""
+        // Benign tracee-exit race spam from proot; demote ONLY this exact pattern to verbose
+        // so real warnings stay visible. Do not blanket-filter ptrace.
+        if (m.contains("ptrace(PEEKDATA)") && m.contains("No such process")) {
+            AppLog.v(t, m)
+        } else {
+            AppLog.w(t, m)
+        }
+    }
     override fun logInfo(tag: String?, message: String?) { Log.i(tag ?: "Terminal", message ?: "") }
     override fun logDebug(tag: String?, message: String?) { Log.d(tag ?: "Terminal", message ?: "") }
     override fun logVerbose(tag: String?, message: String?) { Log.v(tag ?: "Terminal", message ?: "") }
