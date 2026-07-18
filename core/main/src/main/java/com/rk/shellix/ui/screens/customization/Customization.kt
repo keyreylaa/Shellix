@@ -92,18 +92,8 @@ fun Customization(
             BackgroundSection(terminalViewModel)
         }
 
-        PreferenceGroup(heading = "Terminal Theme") {
-            TerminalThemeSection(terminalViewModel)
-        }
-
-        DiagnosticsSection(terminalViewModel)
-
-        PreferenceGroup {
-            SettingsToggle(label = stringResource(strings.bell), description = stringResource(strings.bell_desc), showSwitch = true, default = Settings.bell, sideEffect = { Settings.bell = it })
-            SettingsToggle(label = stringResource(strings.vibrate), description = stringResource(strings.vibrate_desc), showSwitch = true, default = Settings.vibrate, sideEffect = { Settings.vibrate = it })
-        }
-
-        PreferenceGroup(heading = "App Theme") {
+        PreferenceGroup(heading = "Theme") {
+            ThemeSubheader("Interface")
             val currentMode = remember { Settings.default_night_mode }
             val modeNames = listOf("Light", "System", "Dark")
             val modeValues = listOf(
@@ -161,7 +151,29 @@ fun Customization(
                     }
                 }
             )
+
+            Spacer(Modifier.height(8.dp))
+            ThemeSubheader("Terminal")
+            TerminalThemeSection(terminalViewModel)
         }
+
+        DiagnosticsSection(terminalViewModel)
+
+        PreferenceGroup {
+            SettingsToggle(label = stringResource(strings.bell), description = stringResource(strings.bell_desc), showSwitch = true, default = Settings.bell, sideEffect = { Settings.bell = it })
+            SettingsToggle(label = stringResource(strings.vibrate), description = stringResource(strings.vibrate_desc), showSwitch = true, default = Settings.vibrate, sideEffect = { Settings.vibrate = it })
+            SettingsToggle(
+                label = "Keep screen on",
+                description = "Prevent the screen from turning off while Shellix is open (useful for long installs/builds)",
+                showSwitch = true,
+                default = Settings.keep_screen_on,
+                sideEffect = {
+                    Settings.keep_screen_on = it
+                    mainActivity.applyKeepScreenOn()
+                }
+            )
+        }
+
 
         PreferenceGroup {
             SettingsToggle(
@@ -220,28 +232,18 @@ fun Customization(
             )
         }
 
-        PreferenceGroup(heading = "Terminal Theme") {
-            PreferenceTemplate(
-                modifier = Modifier.clickable {
-                    TerminalThemes.applyDracula(context)
-                    toast("Dracula applied. Restart session to see colors.")
-                },
-                title = { Text("Dracula") },
-                description = { Text("Apply the Dracula color scheme") }
-            )
-
-            PreferenceTemplate(
-                modifier = Modifier.clickable {
-                    TerminalThemes.applyDefault(context)
-                    toast("Reverted to default colors.")
-                },
-                title = { Text("Default colors") },
-                description = { Text("Revert to the default color scheme") }
-            )
-        }
-
         ShortcutSection()
     }
+}
+
+@Composable
+private fun ThemeSubheader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+    )
 }
 
 @Composable
