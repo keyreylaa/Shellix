@@ -34,6 +34,7 @@ ktfmt = "0.25.0"
 jgit = "6.2.0.202206071550-r"
 
 tsBinding = "4.3.2"
+soraEditor = "0.23.4"
 lsp4j = "1.0.0"
 uiautomator = "2.3.0"
 benchmark = "1.5.0-alpha06"
@@ -177,6 +178,8 @@ semver = { module = "io.github.z4kn4fein:semver", version.ref = "semver" }
 # Tree-sitter / editor
 tree-sitter = { module = "com.itsaky.androidide.treesitter:android-tree-sitter", version.ref = "tsBinding" }
 tree-sitter-java = { module = "com.itsaky.androidide.treesitter:tree-sitter-java", version.ref = "tsBinding" }
+sora-editor = { module = "io.github.Rosemoe.sora-editor:editor", version.ref = "soraEditor" }
+sora-language-textmate = { module = "io.github.Rosemoe.sora-editor:language-textmate", version.ref = "soraEditor" }
 
 # Compose extras
 compose-dnd = { module = "com.mohamedrejeb.dnd:compose-dnd", version.ref = "composeDnd" }

@@ -23,6 +23,7 @@ android {
     }
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -44,6 +45,9 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.utilcode)
+    implementation(libs.sora.editor)
+    implementation(libs.sora.language.textmate)
+    coreLibraryDesugaring(libs.desugar)
 
     implementation(project(":core:resources"))
     implementation(project(":core:components"))

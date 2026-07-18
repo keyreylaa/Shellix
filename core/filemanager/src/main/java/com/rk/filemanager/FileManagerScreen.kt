@@ -53,6 +53,7 @@ fun FileManagerScreen(
     var showNewFile by remember { mutableStateOf(false) }
     var showNewFolder by remember { mutableStateOf(false) }
     var overwriteConfirm by remember { mutableStateOf<List<String>?>(null) }
+    var openFile by remember { mutableStateOf<File?>(null) }
 
     fun clearSelection() = selected.clear()
 
@@ -65,6 +66,12 @@ fun FileManagerScreen(
         }
         if (clipMode == ClipMode.CUT) clipboard = emptyList()
         refresh()
+    }
+
+    val fileToEdit = openFile
+    if (fileToEdit != null) {
+        CodeEditorScreen(file = fileToEdit, onBack = { openFile = null })
+        return
     }
 
     BackHandler(enabled = true) {
@@ -189,8 +196,7 @@ fun FileManagerScreen(
                                 } else if (entry.isDirectory) {
                                     current = entry.file
                                 } else {
-                                    // Tahap C: open in editor
-                                    toast("Editor opens in the next update")
+                                    openFile = entry.file
                                 }
                             },
                             onLongClick = {
