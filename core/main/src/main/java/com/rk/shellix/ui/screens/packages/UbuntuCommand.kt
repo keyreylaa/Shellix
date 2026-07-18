@@ -15,7 +15,7 @@ import com.termux.terminal.TerminalSession
  */
 object UbuntuCommand {
     private const val TIMEOUT_MS = 60_000L
-    private const val POLL_MS = 150L
+    private const val POLL_MS = 250L
 
     /**
      * Executes [command] (without sudo) as root via the NOPASSWD sudo user.

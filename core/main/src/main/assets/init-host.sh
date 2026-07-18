@@ -64,10 +64,20 @@ ARGS="$ARGS --link2symlink"
 ARGS="$ARGS --sysvipc"
 ARGS="$ARGS -L"
 
-# Launch proot at lower CPU priority so heavy in-session work (codex, npm/pnpm) cannot
-# starve the Android UI thread. Fall back to a normal launch if `nice` is unavailable.
+# Launch proot deprioritized so heavy in-session work (codex, npm/pnpm, cmake/python
+# builds) cannot starve the Android UI:
+#   - CPU: nice 15 (strongly deprioritized scheduling)
+#   - I/O: ionice best-effort/idle class so disk-heavy compiles (many small file
+#     reads/writes) yield disk bandwidth to the UI process instead of contending.
+# Every wrapper is optional and guarded so launch never fails on a host missing them.
+NICE=""
 if command -v nice >/dev/null 2>&1; then
-  exec nice -n 10 $PROOT $ARGS sh $PREFIX/local/bin/init "$@"
-else
-  exec $PROOT $ARGS sh $PREFIX/local/bin/init "$@"
+  NICE="nice -n 15"
 fi
+IONICE=""
+if command -v ionice >/dev/null 2>&1; then
+  # -c2 = best-effort class, -n7 = lowest best-effort priority (safer than pure idle
+  # class -c3, which can stall builds indefinitely under sustained UI disk activity).
+  IONICE="ionice -c2 -n7"
+fi
+exec $IONICE $NICE $PROOT $ARGS sh $PREFIX/local/bin/init "$@"
