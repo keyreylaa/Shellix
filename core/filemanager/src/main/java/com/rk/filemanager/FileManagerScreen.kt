@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.Html
 import androidx.compose.material.icons.filled.Css
 import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Markdown
 import androidx.compose.material.icons.filled.Note
 import androidx.compose.material.icons.filled.TextSnippet
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
@@ -52,7 +51,7 @@ private fun iconForFile(name: String): ImageVector {
         "html", "htm", "vue", "svelte", "xml" -> Icons.Filled.Html
         "css", "scss", "less" -> Icons.Filled.Css
         "json", "jsonc", "yml", "yaml", "toml", "ini", "cfg", "conf", "properties", "env" -> Icons.Filled.DataObject
-        "md", "markdown" -> Icons.Filled.Markdown
+        "md", "markdown" -> Icons.Filled.Description
         "txt", "log", "gitignore", "license", "csv" -> Icons.Filled.Description
         "doc", "docx", "pdf", "rtf" -> Icons.Filled.TextSnippet
         else -> Icons.AutoMirrored.Filled.InsertDriveFile

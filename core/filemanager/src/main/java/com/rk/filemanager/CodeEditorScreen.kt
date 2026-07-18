@@ -78,7 +78,6 @@ fun CodeEditorScreen(file: File, onBack: () -> Unit) {
                             // Cut per-line overdraw/render cost while scrolling large files (Tugas 6, F3).
                             setHighlightCurrentLine(false)
                             setCursorAnimationEnabled(false)
-                            setOverScrollEnabled(false)
                             // line numbers are enabled by default in Sora Editor.
                             // Lightweight keyword/comment/string highlighter chosen by file
                             // extension — no native regex engine, so it never touches the
