@@ -32,18 +32,28 @@ object TerminalColorSchemes {
      * white), and pastel ANSI colors so colored output stays distinguishable without being
      * harsh. Foreground/background contrast is ~9.5:1 (well above WCAG AA 4.5:1).
      */
+    /**
+     * Soft Dark — the fresh-install default. Final palette approved from the design
+     * preview (shellix-soft-dark-v2-preview.html): a warm, low-glare purple-grey dark
+     * theme with dimmed text and a family of soft pastel ANSI hues. Foreground
+     * (#d9d6e3) over the terminal background (#211f2d) has ~11.3:1 contrast (WCAG AAA).
+     *
+     * The design palette has 10 hues; ANSI is 8+8, so extra hues (orange/teal/violet/
+     * pink) fold into the nearest of the 8 standard slots. color15 (bright white) is a
+     * neutral white so CLI tools that use it for default text stay plain (not tinted).
+     */
     val SOFT_DARK = ColorScheme(
         name = "Soft Dark",
-        background = "2a2a38",
-        foreground = "d4d2e0",
-        cursor = "d4d2e0",
+        background = "211f2d",   // --bg-terminal
+        foreground = "d9d6e3",   // --fg-primary
+        cursor = "c4a7e0",       // --accent
         colors = listOf(
-            // normal: black, red, green, yellow, blue, magenta, cyan, white
-            "3a3a4a", "d97e88", "8fc793", "d8c58f",
-            "8aa8d8", "bb98cf", "8fc6c8", "c8c6d4",
-            // bright variants (slightly lighter/pastel)
-            "5a5a6e", "e58a95", "9fd6a0", "e6d6a0",
-            "9ab8e8", "cba6de", "9fd4d6", "e6e4ee"
+            // normal 0-7: black, red, green, yellow, blue, magenta, cyan, white
+            "38354a", "e8919f", "9ed6a3", "e8cf8f",
+            "93aee8", "d98fc9", "8dc8e0", "d9d6e3",
+            // bright 8-15
+            "6c6884", "f3aab6", "b6e8ba", "f3dfa8",
+            "aec2f0", "eaaadd", "a6ddf0", "f3f1f8"
         )
     )
 
