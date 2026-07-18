@@ -49,10 +49,10 @@ class TerminalBackEnd(
     }
 
     private fun isActiveSession(session: TerminalSession): Boolean {
-        val service = activity.viewModel.sessionBinder?.getService() ?: return true
+        val binder = activity.viewModel.sessionBinder ?: return true
         // Cheap: reference-compare the changed session against the active one via the
         // cached id (single hashmap get, no Compose-state read on the hot path).
-        return service.getSession(service.activeSessionId) === session
+        return binder.getSession(binder.getService().activeSessionId) === session
     }
 
     override fun onTextChanged(changedSession: TerminalSession) {
