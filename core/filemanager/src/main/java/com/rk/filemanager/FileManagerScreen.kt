@@ -12,6 +12,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -128,7 +130,7 @@ fun FileManagerScreen(
                             Icon(Icons.Filled.CreateNewFolder, contentDescription = "New folder")
                         }
                         IconButton(onClick = { showNewFile = true }) {
-                            Icon(Icons.Filled.NoteAdd, contentDescription = "New file")
+                            Icon(Icons.AutoMirrored.Filled.NoteAdd, contentDescription = "New file")
                         }
                     }
                 )
@@ -286,7 +288,7 @@ private fun NameDialog(title: String, label: String, onDismiss: () -> Unit, onCo
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun FileRow(entry: FileEntry, selected: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
-    val icon: ImageVector = if (entry.isDirectory) Icons.Filled.Folder else Icons.Filled.InsertDriveFile
+    val icon: ImageVector = if (entry.isDirectory) Icons.Filled.Folder else Icons.AutoMirrored.Filled.InsertDriveFile
     ListItem(
         modifier = Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick),
         colors = if (selected) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)

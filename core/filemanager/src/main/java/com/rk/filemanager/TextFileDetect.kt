@@ -25,6 +25,7 @@ object TextFileDetect {
 
     /** Byte-array overload (testable without touching the filesystem). */
     fun isProbablyText(bytes: ByteArray, length: Int = bytes.size): Boolean {
+        if (length <= 0) return true // empty content is editable
         var suspicious = 0
         for (i in 0 until length) {
             val b = bytes[i].toInt() and 0xFF
