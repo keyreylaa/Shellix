@@ -242,7 +242,7 @@ done < <(find "$ROOT/core" -maxdepth 2 -name build.gradle.kts 2>/dev/null)
 
 # ══════════════════════════════════════════════════════════════════
 section "Version consistency"
-VER=$(grep 'versionName' "$ROOT/app/build.gradle.kts" | grep -v 'Suffix' | grep -o '"[0-9.]*"' | tr -d '"')
+VER=$(grep 'versionName' "$ROOT/app/build.gradle.kts" | grep -v 'Suffix' | grep -oE '"[0-9][0-9A-Za-z.\-]*"' | tr -d '"')
 CODE=$(grep 'versionCode' "$ROOT/app/build.gradle.kts" | grep -o '= *[0-9]*' | tr -d '= ')
 if [ -n "$VER" ] && [ -n "$CODE" ]; then ok "App: $VER (code: $CODE)"; else warn "could not parse version from app/build.gradle.kts"; fi
 

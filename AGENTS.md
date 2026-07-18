@@ -4,7 +4,7 @@ Compact guidance for agents working in the **Shellix** repo (Android/Kotlin, a r
 
 ## Build & verification (critical)
 - **Local Gradle/SDK build IS possible** (proven 2026-07-17): install Android cmdline-tools + `platforms;android-34` + `build-tools;34.0.0` + `platform-tools` into an `ANDROID_HOME`, then run gradle with a **Java 17** toolchain (NOT the gradle-default Java 21 daemon JVM, which crashes with `NoClassDefFoundError: FailureFactory`). Set `JAVA_HOME=/usr/lib/jvm/java-17-openjdk-arm64`, `ANDROID_HOME=...`, and pass `-Dorg.gradle.java.installations.auto-download=false -Dorg.gradle.java.installations.paths=/usr/lib/jvm/java-17-openjdk-arm64`. Do NOT edit `gradle/gradle-daemon-jvm.properties` (keep it at 21 for CI) — override the daemon JVM via env/flags only. Use `./gradlew :core:main:compileDebugKotlin` to catch Kotlin errors locally before pushing. Gradle output is heavily buffered; a full `compileDebugKotlin` takes several minutes, so **GitHub CI (`gh run`) remains the fastest signal** — push and watch `gh run list`.
-- **Local verification:** Run `./verify.sh` before every push. It checks file structure, known bug patterns, shell syntax, and Kotlin syntax (files without Android deps). Shows ALL errors at once — fix everything before pushing.
+- **Local verification:** Run `./verify.sh` before every push. It is a fast static pre-build simulation: file structure, gradle module graph (unregistered module / dangling `project(:)` dep), core-library-desugaring consistency, version-catalog `libs.*` refs, cross-module import boundaries, known-bug regression guards, and shell syntax. Structured OK/WARN/FAIL output + summary + exit codes. It does NOT full-compile; set `VERIFY_KOTLIN=1` for a slow kotlinc probe. Fix everything before pushing.
 - **CI verification:** `.github/workflows/verify.yml` runs `./gradlew test` + lint on every push. Watch it with `gh run list`.
 - **APK build:** `.github/workflows/android.yml` runs only on push to master/main/dev. Runs `./gradlew assembleRelease`, signs APK, uploads as `Shellix-Release` artifact. APK is copied to `app/shellix-<short-sha>.apk`.
 - **Telegram step was removed** (it sent to a non-owner channel). Do not re-add it.
@@ -18,9 +18,9 @@ Compact guidance for agents working in the **Shellix** repo (Android/Kotlin, a r
 6. Repeat until both `verify.yml` and `android.yml` (if applicable) are green.
 
 ## Repo layout & naming
-- App module: `app/`. Core library: `core/main/` (namespace `com.rk.shellix`), `core/proot/`, `core/components/`, `core/resources/`.
+- App module: `app/`. Core modules: `core/main/` (namespace `com.rk.shellix`), `core/proot/` (native PRoot C/JNI), `core/components/`, `core/resources/`, and `core/filemanager/` (self-contained File Manager + Sora code editor; namespace `com.rk.filemanager`).
 - `applicationId` is `com.shellix.terminal` (independent of the Kotlin namespace).
-- App screen packages live under `core/main/.../ui/screens/{terminal,settings,customization,downloader,packages}`.
+- App screen packages live under `core/main/.../ui/screens/{terminal,settings,customization,downloader,packages,about}`.
 - Navigation: routes in `ui/routes/MainActivityRoutes.kt`, wired in `ui/navHosts/MainActivityNavHost.kt`, drawer items in `ui/screens/terminal/TerminalDrawer.kt`, top-bar actions in `TerminalTopBar.kt`.
 
 ## Hard-won facts (do not repeat these mistakes)
@@ -32,6 +32,12 @@ Compact guidance for agents working in the **Shellix** repo (Android/Kotlin, a r
 - **init.sh user switch (FIXED):** Must re-check `/etc/shellix_default_user` AFTER running `setup-user.sh`, not just at the top — otherwise the first session stays root.
 - **Settings.wallTransparency default (FIXED):** Default is now `1f` (fully opaque), not `0f` (invisible).
 - **No Composable input field for the terminal.** Voice/keyboard input goes to the emulator via `session.emulator.paste(text)` (see `VoiceInput.kt` and Clear action in `TerminalScreen.kt`).
+
+- **`core:filemanager` must NOT depend on `core:main`.** It owns the Sora Editor stack and its highlighter, and is wired into navigation FROM `core:main` (route + nav host + drawer). Depending back on `core:main` creates a dependency cycle. It also cannot use `com.rk.libcommons.*` (that package lives in `core:main`); use plain Android APIs (e.g. `Toast`) instead. `verify.sh` guards both of these.
+- **Sora Editor requires core library desugaring.** `io.github.Rosemoe.sora-editor:language-textmate` fails `checkDebugAarMetadata` unless `isCoreLibraryDesugaringEnabled = true` + `coreLibraryDesugaring(libs.desugar)` are set in EVERY consuming module: `core:filemanager`, `core:main`, AND `app`. `verify.sh` checks this consistency.
+- **Editor syntax highlighting is a heuristic tokenizer** (`core/filemanager/.../SyntaxRules.kt` + `SimpleHighlightLanguage.kt`), NOT TextMate/TreeSitter — chosen deliberately to avoid native regex engines/grammar bundles that would bloat the APK and risk the terminal render path. Upgrade path is documented inline (`ponytail:` note).
+- **About screen renders the live GitHub Wiki `Home.md`** via OkHttp (single source of truth). Keep the Wiki as the doc SSOT; do not duplicate long-form docs in-app.
+- **Version bumps live in `app/build.gradle.kts`** (`versionCode`, `versionName`). `verify.sh` reads them for the version-consistency check.
 
 ## Conventions
 - Commit small, push frequently (CI is the only build check).
