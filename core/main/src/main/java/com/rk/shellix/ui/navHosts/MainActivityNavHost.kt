@@ -21,6 +21,7 @@ import com.rk.shellix.ui.screens.downloader.SetupWizard
 import com.rk.shellix.ui.screens.settings.Settings
 import com.rk.shellix.ui.screens.packages.PackagesScreen
 import com.rk.filemanager.FileManagerScreen
+import com.rk.shellix.ui.screens.about.AboutScreen
 import com.rk.libcommons.ubuntuHomeDir
 import com.rk.shellix.ui.screens.terminal.Rootfs
 import com.rk.shellix.ui.screens.terminal.TerminalScreen
@@ -84,6 +85,11 @@ fun MainActivityNavHost(
                 phoneRoot = android.os.Environment.getExternalStorageDirectory(),
                 onBack = { navController.popBackStack() }
             )
+        }
+
+        composable(MainActivityRoutes.About.route) {
+            UpdateStatusBar(mainActivity.window, true)
+            AboutScreen(navController = navController)
         }
     }
 }

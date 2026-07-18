@@ -82,6 +82,10 @@ object Settings {
         get() = Preference.getBoolean(key = "keep_screen_on", default = false)
         set(value) = Preference.setBoolean(key = "keep_screen_on",value)
 
+    var last_seen_crash_id: String
+        get() = Preference.getString(key = "last_seen_crash_id", default = "")
+        set(value) = Preference.setString(key = "last_seen_crash_id", value)
+
     var bell
         get() = Preference.getBoolean(key = "bell", default = false)
         set(value) = Preference.setBoolean(key = "bell",value)

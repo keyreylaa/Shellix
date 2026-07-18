@@ -99,6 +99,36 @@ class MainActivity : ComponentActivity() {
                             keyboardController?.hide()
                         }
                     }
+
+                    // Proactive crash notice: show once per distinct crash from a previous run.
+                    val crashReport = remember { com.rk.shellix.ui.diagnostics.Diagnostics.lastCrashReport }
+                    val crashId = remember { com.rk.shellix.ui.diagnostics.Diagnostics.crashId(crashReport) }
+                    var showCrashNotice by remember {
+                        mutableStateOf(crashId.isNotEmpty() && crashId != com.rk.settings.Settings.last_seen_crash_id)
+                    }
+                    if (showCrashNotice) {
+                        androidx.compose.material3.AlertDialog(
+                            onDismissRequest = {
+                                com.rk.settings.Settings.last_seen_crash_id = crashId
+                                showCrashNotice = false
+                            },
+                            title = { androidx.compose.material3.Text("Shellix crashed last time") },
+                            text = { androidx.compose.material3.Text("A crash was recorded during your previous session. You can view the report for details.") },
+                            confirmButton = {
+                                androidx.compose.material3.TextButton(onClick = {
+                                    com.rk.settings.Settings.last_seen_crash_id = crashId
+                                    showCrashNotice = false
+                                    navController.navigate(MainActivityRoutes.Customization.route)
+                                }) { androidx.compose.material3.Text("View details") }
+                            },
+                            dismissButton = {
+                                androidx.compose.material3.TextButton(onClick = {
+                                    com.rk.settings.Settings.last_seen_crash_id = crashId
+                                    showCrashNotice = false
+                                }) { androidx.compose.material3.Text("Dismiss") }
+                            }
+                        )
+                    }
                 }
             }
         }

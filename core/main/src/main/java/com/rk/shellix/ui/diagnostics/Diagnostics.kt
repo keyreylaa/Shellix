@@ -86,4 +86,13 @@ object Diagnostics {
             File(application.filesDir, "crash_report.txt").takeIf { it.exists() }?.readText()
         }.getOrNull()
     }
+
+    /**
+     * Stable identity for a given crash report, used to show the proactive crash
+     * notice only once per distinct crash. Derived from the report's content hash.
+     */
+    fun crashId(report: String?): String {
+        if (report.isNullOrBlank()) return ""
+        return Integer.toHexString(report.hashCode())
+    }
 }
