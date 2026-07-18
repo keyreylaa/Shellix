@@ -1,5 +1,42 @@
 # Changelog
 
+## Shellix v1.3.0 — Performance, Audit & Polish
+_2026-07-18_
+
+### Added
+- **Session rename + smart names:** new sessions are auto-named `Session 1`, `Session 2`, …
+  instead of raw ids (`main`, `main2`). **Long-press a session tab** (or drawer item) to rename
+  it via a dialog. Names show in both the tab bar and the navigation drawer.
+- **Performance diagnostics:** Settings → Diagnostics now has a **Performance** section showing
+  last-second frame-drop %, active session count, and whether background-tab rendering is throttled.
+
+### Fixed / Improved
+- **UI jank under load (§1):** terminal redraws are now **coalesced to one per frame** instead of
+  one per output line. Heavy output (e.g. `npm install`, `pnpm install`, `codex`, `claude`) no
+  longer floods the UI thread — the app stays smooth even when a session is spewing text.
+- **5-session smoothness (§1):** only the **active** tab gets full per-frame redraws; background
+  tabs are throttled (their PRoot process keeps running). Switching to a tab forces one immediate
+  redraw so it is never blank.
+- **Lifecycle guard (§1):** redraw scheduling is skipped while the app is backgrounded/stopped.
+- **Off-main command polling (§1):** `UbuntuCommand` reads the terminal transcript off the main
+  thread (`Dispatchers.Default`), reducing main-thread contention.
+- **ptrace log spam (§3):** the benign `proot warning: ptrace(PEEKDATA): No such process` (a
+  tracee-exit race) is demoted to verbose. Real warnings still surface.
+
+### Performance (PRoot)
+- **Lower CPU priority (§2):** PRoot launches with `nice -n 10` so heavy in-session work cannot
+  starve the Android UI thread. Falls back to a normal launch if `nice` is unavailable.
+- **Fewer bind mounts (§2):** removed a duplicate `-b $PREFIX` mount (less path-rewrite per syscall).
+- **link2symlink kept ON (§2):** per termux/proot-distro docs, disabling hardlink emulation is only
+  safe on SELinux-permissive devices, so it stays enabled to keep `npm`/`pnpm` installs working.
+
+### Build / CI
+- Version bumped to `1.3.0` (code 4).
+- Design + plan: `docs/specs/2026-07-18-perf-audit-polish-design.md`,
+  `docs/plans/2026-07-18-perf-audit-polish.md`.
+
+---
+
 ## Shellix v1.2.0 — Performance & Security Hardening
 _2026-07-18_
 

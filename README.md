@@ -73,6 +73,15 @@ A Material 3 terminal emulator for Android that boots a real Ubuntu 24.04 Noble 
 - [x] Local verification suite (`verify.sh`) + CI verify workflow
 - [x] Performance: SideEffect for virtual keys, key() for stable BackgroundImage
 
+**v1.3.0 — Performance, Audit & Polish**
+- [x] Coalesced terminal redraws (one per frame, not per line) — smooth under heavy output
+- [x] Visibility-aware rendering: active tab full redraw, background tabs throttled (5-session case)
+- [x] Off-main-thread command polling in `UbuntuCommand`
+- [x] PRoot launched with `nice -n 10` + duplicate bind mount removed
+- [x] Session rename (long-press tab/drawer) + smart default names (`Session N`)
+- [x] Diagnostics: frame-drop counter + Performance section
+- [x] Demote benign `ptrace(PEEKDATA): No such process` warning to verbose
+
 **Blocked / deferred**
 - [ ] Inline terminal image rendering (sixel) — blocked: needs a sixel-capable `terminal-emulator` AAR upgrade (risky, no local build to verify). Revisit when upgrading Termux libs.
 
