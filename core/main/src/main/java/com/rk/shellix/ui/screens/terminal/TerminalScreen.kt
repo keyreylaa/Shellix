@@ -168,8 +168,9 @@ fun TerminalScreen(
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onAddClick = { showAddDialog = true },
                         onMicClick = {
-                            VoiceInput.recognize(
+                            VoiceInput.toggle(
                                 activity = mainActivity,
+                                onListening = { listening -> terminalViewModel.voiceListening = listening },
                                 onResult = { text ->
                                     val binder = sessionBinder
                                     val id = binder?.getService()?.currentSession?.value?.first
@@ -179,6 +180,7 @@ fun TerminalScreen(
                                 onError = { com.rk.libcommons.toast(it) }
                             )
                         },
+                        micListening = terminalViewModel.voiceListening,
                         color = TerminalUtils.getComposeColor()
                     )
                 }

@@ -4,8 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -13,25 +11,38 @@ import androidx.core.app.ActivityCompat
 import java.util.Locale
 
 /**
- * Wraps Android's built-in [SpeechRecognizer] to convert speech to text.
- * Recognized text is delivered via [onResult]; the caller decides what to do
- * with it (e.g. paste into the terminal, editable before Enter).
+ * Wraps Android's built-in [SpeechRecognizer] as a TOGGLE mic: tap once to start
+ * listening, tap again to stop and process the result.
+ *
+ * Language: Android's [SpeechRecognizer] does not offer reliable, universal
+ * auto-language-detection (it depends on the installed Google app / OS version and
+ * has no stable public API for it). So instead of falsely claiming auto-detect, we
+ * recognize in the device's current system language (BCP-47). If your phone is set
+ * to Indonesian, speech is transcribed as Indonesian.
  */
 object VoiceInput {
-    private const val TIMEOUT_MS = 10_000L
+
+    @Volatile private var recognizer: SpeechRecognizer? = null
+    @Volatile var isListening: Boolean = false
+        private set
 
     /**
-     * Starts speech recognition.
-     *
-     * @param activity the host activity (used for permission + recognizer).
-     * @param onResult called with the recognized text (best match).
-     * @param onError called with a human-readable error description.
+     * Toggle listening. If idle, start; if already listening, stop and let the
+     * pending result callback fire. [onListening] reports the on/off state so the
+     * UI can show a proper toggled indicator.
      */
-    fun recognize(
+    fun toggle(
         activity: Activity,
+        onListening: (Boolean) -> Unit,
         onResult: (String) -> Unit,
         onError: (String) -> Unit
     ) {
+        if (isListening) {
+            stop()
+            onListening(false)
+            return
+        }
+
         if (!SpeechRecognizer.isRecognitionAvailable(activity)) {
             onError("Voice input unavailable")
             return
@@ -46,26 +57,26 @@ object VoiceInput {
             return
         }
 
-        val recognizer = SpeechRecognizer.createSpeechRecognizer(activity)
-        val timeout = Handler(Looper.getMainLooper())
-        val timeoutRunnable = Runnable {
-            recognizer.stopListening()
-            onError("Voice input timed out")
-        }
-        timeout.postDelayed(timeoutRunnable, TIMEOUT_MS)
+        val sr = SpeechRecognizer.createSpeechRecognizer(activity)
+        recognizer = sr
 
-        recognizer.setRecognitionListener(object : RecognitionListener {
+        sr.setRecognitionListener(object : RecognitionListener {
             override fun onResults(results: Bundle?) {
-                timeout.removeCallbacks(timeoutRunnable)
+                isListening = false
+                onListening(false)
                 val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                 val text = matches?.firstOrNull()
                 if (text.isNullOrBlank()) onError("No speech recognized") else onResult(text)
-                recognizer.destroy()
+                destroy()
             }
             override fun onError(error: Int) {
-                timeout.removeCallbacks(timeoutRunnable)
-                onError("Voice error: $error")
-                recognizer.destroy()
+                isListening = false
+                onListening(false)
+                // ERROR_NO_MATCH after a manual stop is benign; report others.
+                if (error != SpeechRecognizer.ERROR_NO_MATCH && error != SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                    onError("Voice error: $error")
+                }
+                destroy()
             }
             override fun onReadyForSpeech(p0: Bundle?) {}
             override fun onBeginningOfSpeech() {}
@@ -76,11 +87,27 @@ object VoiceInput {
             override fun onEvent(p0: Int, p1: Bundle?) {}
         })
 
+        // Recognize in the device's current language (BCP-47, e.g. "id-ID" / "en-US").
+        val lang = Locale.getDefault().toLanguageTag()
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault().toString())
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, lang)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, lang)
+            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
         }
-        recognizer.startListening(intent)
+        isListening = true
+        onListening(true)
+        sr.startListening(intent)
+    }
+
+    /** Stop listening; the final result (if any) still arrives via onResults. */
+    fun stop() {
+        recognizer?.stopListening()
+    }
+
+    private fun destroy() {
+        recognizer?.destroy()
+        recognizer = null
     }
 }
