@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.rk.shellix.ui.components.InputDialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -63,6 +64,8 @@ fun TerminalScreen(
     val configuration = LocalConfiguration.current
     val drawerWidth = (configuration.screenWidthDp * 0.84).dp
     var showAddDialog by remember { mutableStateOf(false) }
+    var renameTargetId by remember { mutableStateOf<String?>(null) }
+    var renameText by remember { mutableStateOf("") }
 
     val view = LocalView.current
     DisposableEffect(view) {
@@ -110,6 +113,20 @@ fun TerminalScreen(
                 terminalViewModel.changeSession(context, sessionBinder, sessionId)
                 showAddDialog = false
             }
+        )
+    }
+
+    renameTargetId?.let { id ->
+        InputDialog(
+            title = "Rename session",
+            inputLabel = "Name",
+            inputValue = renameText,
+            onInputValueChange = { renameText = it },
+            onConfirm = {
+                sessionBinder?.renameSession(id, renameText)
+                renameTargetId = null
+            },
+            onDismiss = { renameTargetId = null }
         )
     }
 
@@ -190,7 +207,11 @@ fun TerminalScreen(
                             scope.launch { drawerState.close() }
                         },
                         onCreateSession = { showAddDialog = true },
-                        onCloseSession = { id -> sessionBinder.terminateSession(id) }
+                        onCloseSession = { id -> sessionBinder.terminateSession(id) },
+                        onRenameSession = { id ->
+                            renameText = sessionBinder.getService().sessionList[id]?.name ?: ""
+                            renameTargetId = id
+                        }
                     )
                 }
             }

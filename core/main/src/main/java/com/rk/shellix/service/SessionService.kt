@@ -23,7 +23,7 @@ import com.termux.terminal.TerminalSessionClient
 
 class SessionService : Service() {
     private val sessions = hashMapOf<String, TerminalSession>()
-    val sessionList = mutableStateMapOf<String, Int>()
+    val sessionList = mutableStateMapOf<String, SessionMeta>()
     var currentSession = mutableStateOf(Pair("main", com.rk.settings.Settings.working_Mode))
 
     inner class SessionBinder : Binder() {
@@ -48,7 +48,9 @@ class SessionService : Service() {
                 workingMode = workingMode
             ).also {
                 sessions[id] = it
-                sessionList[id] = workingMode
+                val displayName = "Session ${sessionList.size + 1}"
+                sessionList[id] = SessionMeta(name = displayName, mode = workingMode)
+                com.rk.shellix.ui.diagnostics.PerfStats.activeSessions = sessions.size
                 updateNotification()
             }
         }
@@ -56,6 +58,12 @@ class SessionService : Service() {
         fun getSession(id: String): TerminalSession? = sessions[id]
 
         fun allSessions(): List<TerminalSession> = sessions.values.toList()
+
+        fun renameSession(id: String, newName: String) {
+            val meta = sessionList[id] ?: return
+            val trimmed = newName.trim()
+            if (trimmed.isNotEmpty()) sessionList[id] = meta.copy(name = trimmed)
+        }
 
         fun terminateSession(id: String) {
             sessions[id]?.apply {
@@ -65,6 +73,7 @@ class SessionService : Service() {
             }
             sessions.remove(id)
             sessionList.remove(id)
+            com.rk.shellix.ui.diagnostics.PerfStats.activeSessions = sessions.size
             if (sessions.isEmpty()) {
                 stopSelf()
             } else {
@@ -159,3 +168,5 @@ class SessionService : Service() {
         return if (count == 1) "1 session running" else "$count sessions running"
     }
 }
+
+data class SessionMeta(val name: String, val mode: Int)

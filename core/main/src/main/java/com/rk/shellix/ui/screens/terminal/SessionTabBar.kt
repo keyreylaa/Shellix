@@ -1,5 +1,7 @@
 package com.rk.shellix.ui.screens.terminal
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -13,16 +15,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.rk.shellix.service.SessionService
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SessionTabBar(
     sessionBinder: SessionService.SessionBinder?,
     onSessionSelected: (String) -> Unit,
     onCreateSession: () -> Unit,
-    onCloseSession: (String) -> Unit
+    onCloseSession: (String) -> Unit,
+    onRenameSession: (String) -> Unit
 ) {
-    val sessions = sessionBinder?.getService()?.sessionList?.keys?.toList() ?: emptyList()
-    val currentSessionId = sessionBinder?.getService()?.currentSession?.value?.first
+    val service = sessionBinder?.getService()
+    val sessions = service?.sessionList?.entries?.map { it.key to it.value }?.toList() ?: emptyList()
+    val currentSessionId = service?.currentSession?.value?.first
     val canClose = sessions.size > 1
 
     Surface(
@@ -48,12 +52,16 @@ fun SessionTabBar(
                 }
             )
 
-            sessions.forEach { sessionId ->
+            sessions.forEach { (sessionId, meta) ->
                 val selected = sessionId == currentSessionId
                 InputChip(
                     selected = selected,
                     onClick = { onSessionSelected(sessionId) },
-                    label = { Text(sessionId) },
+                    modifier = Modifier.combinedClickable(
+                        onClick = { onSessionSelected(sessionId) },
+                        onLongClick = { onRenameSession(sessionId) }
+                    ),
+                    label = { Text(meta.name) },
                     trailingIcon = if (canClose) {
                         {
                             IconButton(

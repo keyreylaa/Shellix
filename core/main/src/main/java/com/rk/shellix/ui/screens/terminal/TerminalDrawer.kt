@@ -73,9 +73,9 @@ fun TerminalDrawer(
                 }
             }
 
-            sessionBinder?.getService()?.sessionList?.keys?.toList()?.let { sessions ->
+            sessionBinder?.getService()?.sessionList?.entries?.map { it.key to it.value }?.toList()?.let { sessions ->
                 LazyColumn {
-                    items(sessions) { sessionId ->
+                    items(sessions) { (sessionId, meta) ->
                         val isSelected = sessionId == sessionBinder.getService().currentSession.value.first
                         SelectableCard(
                             selected = isSelected,
@@ -88,7 +88,7 @@ fun TerminalDrawer(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(text = sessionId, style = MaterialTheme.typography.bodyLarge)
+                                Text(text = meta.name, style = MaterialTheme.typography.bodyLarge)
 
                                 if (!isSelected) {
                                     Spacer(modifier = Modifier.weight(1f))
