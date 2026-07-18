@@ -8,6 +8,9 @@ import com.github.anrwatchdog.ANRWatchDog
 import com.rk.libcommons.application
 import com.rk.resources.Res
 import com.rk.shellix.ui.screens.terminal.TerminalUtils
+import com.rk.shellix.ui.screens.terminal.TerminalColorSchemes
+import com.rk.shellix.ui.screens.terminal.TerminalThemes
+import com.rk.settings.Settings
 import com.rk.shellix.ui.diagnostics.Diagnostics
 import com.rk.update.UpdateManager
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -50,6 +53,16 @@ class App : Application() {
         Diagnostics.lastCrashReport = Diagnostics.loadPersistedCrash(this)
 
         UpdateManager(this).onUpdate()
+
+        // Materialize the persisted terminal color scheme into colors.properties so the
+        // fresh-install default (Soft Dark) is applied without the user opening settings.
+        // Reads whatever the user last chose, so explicit picks (incl. "Default") are kept.
+        runCatching {
+            TerminalThemes.applyScheme(
+                this,
+                TerminalColorSchemes.byName(Settings.terminal_color_scheme)
+            )
+        }
 
         if (BuildConfig.DEBUG) {
             StrictMode.setVmPolicy(
