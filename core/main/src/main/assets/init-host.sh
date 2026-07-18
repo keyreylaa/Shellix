@@ -48,7 +48,6 @@ if [ -e "/proc/self/fd/2" ]; then
 fi
 
 
-ARGS="$ARGS -b $PREFIX"
 ARGS="$ARGS -b /sys"
 
 if [ ! -d "$PREFIX/local/ubuntu/tmp" ]; then
@@ -59,8 +58,16 @@ ARGS="$ARGS -b $PREFIX/local/ubuntu/tmp:/dev/shm"
 
 ARGS="$ARGS -r $PREFIX/local/ubuntu"
 ARGS="$ARGS -0"
+# link2symlink emulates hardlinks (needed by npm/pnpm). Per termux/proot-distro docs,
+# disabling it (--no-link2symlink) is only safe on SELinux-permissive devices, so we keep it ON.
 ARGS="$ARGS --link2symlink"
 ARGS="$ARGS --sysvipc"
 ARGS="$ARGS -L"
 
-$PROOT $ARGS sh $PREFIX/local/bin/init "$@"
+# Launch proot at lower CPU priority so heavy in-session work (codex, npm/pnpm) cannot
+# starve the Android UI thread. Fall back to a normal launch if `nice` is unavailable.
+if command -v nice >/dev/null 2>&1; then
+  exec nice -n 10 $PROOT $ARGS sh $PREFIX/local/bin/init "$@"
+else
+  exec $PROOT $ARGS sh $PREFIX/local/bin/init "$@"
+fi
