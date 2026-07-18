@@ -116,7 +116,9 @@ class TerminalViewModel : ViewModel() {
         // running sessions on the old colors until the app is restarted. Pushing the new
         // props into each emulator's mColors makes the change apply instantly.
         currentBinder?.allSessions()?.forEach { session ->
-            session.emulator?.mColors?.updateWith(props)
+            // Global COLOR_SCHEME was just updated; reset each emulator's own color copy
+            // so it re-reads the new defaults (updateWith lives on the scheme, not here).
+            session.emulator?.mColors?.reset()
         }
         // Redraw the visible view so the change is seen immediately.
         terminalView?.onScreenUpdated()
