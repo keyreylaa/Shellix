@@ -4,6 +4,7 @@ import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.view.Choreographer
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
@@ -20,6 +21,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.rk.shellix.ui.navHosts.MainActivityNavHost
 import com.rk.shellix.ui.routes.MainActivityRoutes
+import com.rk.shellix.ui.diagnostics.AppLog
+import com.rk.shellix.ui.diagnostics.PerfStats
 import com.rk.shellix.ui.screens.terminal.TerminalViewModel
 import com.rk.shellix.ui.theme.ShellixTheme
 
@@ -31,6 +34,30 @@ class MainActivity : ComponentActivity() {
 
     @Volatile var isTerminalResumed = true
         private set
+
+    private var lastFrameNs = 0L
+    private var frameCount = 0
+    private var jankCount = 0
+    private var windowStartNs = 0L
+
+    private val frameCallback = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (lastFrameNs != 0L) {
+                val deltaMs = (frameTimeNanos - lastFrameNs) / 1_000_000.0
+                frameCount++
+                if (deltaMs > 32.0) jankCount++ // > ~2 frames = visible jank
+            }
+            lastFrameNs = frameTimeNanos
+            if (windowStartNs == 0L) windowStartNs = frameTimeNanos
+            if (frameTimeNanos - windowStartNs >= 1_000_000_000L) {
+                val pct = if (frameCount > 0) jankCount * 100 / frameCount else 0
+                PerfStats.update(jankPercent = pct, frames = frameCount)
+                if (pct > 0) AppLog.v("Perf", "jank ${pct}% (${jankCount}/${frameCount} frames >32ms)")
+                frameCount = 0; jankCount = 0; windowStartNs = frameTimeNanos
+            }
+            Choreographer.getInstance().postFrameCallback(this)
+        }
+    }
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -84,6 +111,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         isTerminalResumed = false
+        Choreographer.getInstance().removeFrameCallback(frameCallback)
+        lastFrameNs = 0L
+        windowStartNs = 0L
         super.onStop()
         viewModel.unbindService(this)
     }
@@ -96,6 +126,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         isTerminalResumed = true
+        Choreographer.getInstance().postFrameCallback(frameCallback)
         if (wasKeyboardOpen && !isKeyboardVisible) {
             terminalViewModel.terminalView?.let { terminalView ->
                 val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager

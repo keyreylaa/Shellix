@@ -50,6 +50,21 @@ fun DiagnosticsSection(viewModel: TerminalViewModel) {
         )
     }
 
+    PreferenceGroup(heading = "Performance") {
+        PreferenceTemplate(
+            title = { Text("Frame drops (last second)") },
+            description = { Text("${PerfStats.lastJankPercent}% of ${PerfStats.lastFrameCount} frames > 32ms") }
+        )
+        PreferenceTemplate(
+            title = { Text("Active sessions") },
+            description = { Text("${PerfStats.activeSessions} running") }
+        )
+        PreferenceTemplate(
+            title = { Text("Background render") },
+            description = { Text(if (PerfStats.backgroundRenderPaused) "Throttled (background tab)" else "Full (all active)") }
+        )
+    }
+
     if (showLogs) {
         LogViewerDialog(onDismiss = { showLogs = false })
     }
