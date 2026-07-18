@@ -46,6 +46,9 @@ class TerminalViewModel : ViewModel() {
     var showVirtualKeys by mutableStateOf(Settings.virtualKeys)
     var showHorizontalToolbar by mutableStateOf(Settings.toolbar)
 
+    // Real mic listening state for the voice-input toggle button.
+    var voiceListening by mutableStateOf(false)
+
     fun setFont(typeface: Typeface) {
         TerminalUtils.typeface = typeface
         terminalView?.apply {
@@ -108,12 +111,15 @@ class TerminalViewModel : ViewModel() {
         }
         TerminalColors.COLOR_SCHEME.updateWith(props)
 
-        // Redraw every attached terminal view so the new scheme is reflected.
-        // (termux keeps a per-emulator color copy; onScreenUpdated re-renders the
-        // visible session from the updated global scheme.)
-        currentBinder?.allSessions()?.forEach { _ ->
-            terminalView?.onScreenUpdated()
+        // Re-tint EVERY live session's own emulator color copy. Each emulator caches its
+        // own TerminalColors at attach time, so updating only the global scheme leaves
+        // running sessions on the old colors until the app is restarted. Pushing the new
+        // props into each emulator's mColors makes the change apply instantly.
+        currentBinder?.allSessions()?.forEach { session ->
+            session.emulator?.mColors?.updateWith(props)
         }
+        // Redraw the visible view so the change is seen immediately.
         terminalView?.onScreenUpdated()
+        terminalView?.invalidate()
     }
 }

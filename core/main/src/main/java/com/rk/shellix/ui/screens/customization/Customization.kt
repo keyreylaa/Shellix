@@ -117,7 +117,7 @@ fun Customization(
                             Settings.default_night_mode = modeValues[i]
                             navController.context?.let { ctx ->
                                 val act = (ctx as? android.app.Activity)
-                                if (act != null) ThemeManager.apply(act)
+                                if (act != null) { ThemeManager.apply(act); act.recreate() }
                             }
                         },
                         label = { Text(name) }
@@ -134,7 +134,7 @@ fun Customization(
                     Settings.amoled = it
                     navController.context?.let { ctx ->
                         val act = (ctx as? android.app.Activity)
-                        if (act != null) ThemeManager.apply(act)
+                        if (act != null) { ThemeManager.apply(act); act.recreate() }
                     }
                 }
             )
@@ -147,7 +147,7 @@ fun Customization(
                     Settings.monet = it
                     navController.context?.let { ctx ->
                         val act = (ctx as? android.app.Activity)
-                        if (act != null) ThemeManager.apply(act)
+                        if (act != null) { ThemeManager.apply(act); act.recreate() }
                     }
                 }
             )
