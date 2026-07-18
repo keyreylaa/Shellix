@@ -47,7 +47,9 @@ object UbuntuCommand {
                 var uid = "0"
                 while (System.currentTimeMillis() - uidStart < TIMEOUT_MS) {
                     delay(POLL_MS)
-                    val now = emulator.getScreen().getTranscriptText()
+                    val now = withContext(Dispatchers.Default) {
+                        emulator.getScreen().getTranscriptText()
+                    }
                     val i0 = now.indexOf(uidMarker)
                     val i1 = now.indexOf(uidMarker, i0 + uidMarker.length)
                     val i2 = now.indexOf(uidMarker, i1 + uidMarker.length)
@@ -67,7 +69,9 @@ object UbuntuCommand {
                 val start = System.currentTimeMillis()
                 while (System.currentTimeMillis() - start < TIMEOUT_MS) {
                     delay(POLL_MS)
-                    val now = emulator.getScreen().getTranscriptText()
+                    val now = withContext(Dispatchers.Default) {
+                        emulator.getScreen().getTranscriptText()
+                    }
                     val m0 = now.indexOf(marker)
                     val m1 = now.indexOf(marker, m0 + marker.length)
                     val m2 = now.indexOf(marker, m1 + marker.length)

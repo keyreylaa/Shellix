@@ -3,6 +3,7 @@ package com.rk.shellix.ui.screens.terminal
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.media.MediaPlayer
+import android.os.SystemClock
 import android.util.Log
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -33,8 +34,35 @@ class TerminalBackEnd(
 
     private val terminalViewModel by lazy { ViewModelProvider(activity)[TerminalViewModel::class.java] }
 
+    @Volatile private var redrawScheduled = false
+    @Volatile private var lastBgRedrawMs = 0L
+
+    private fun isActiveSession(session: TerminalSession): Boolean {
+        val binder = activity.viewModel.sessionBinder ?: return true
+        val currentId = binder.getService().currentSession.value.first
+        return binder.getSession(currentId) === session
+    }
+
     override fun onTextChanged(changedSession: TerminalSession) {
-        terminal.onScreenUpdated()
+        // Lifecycle guard: skip redraw work when the activity is not in the foreground.
+        if (!activity.isTerminalResumed) return
+
+        if (isActiveSession(changedSession)) {
+            // Active tab: coalesce a burst of output lines into one redraw per frame (~16ms).
+            if (redrawScheduled) return
+            redrawScheduled = true
+            terminal.post {
+                redrawScheduled = false
+                terminal.onScreenUpdated()
+            }
+        } else {
+            // Background tab (5-session case): PRoot keeps running, but throttle redraw to 1/500ms.
+            com.rk.shellix.ui.diagnostics.PerfStats.backgroundRenderPaused = true
+            val now = SystemClock.uptimeMillis()
+            if (now - lastBgRedrawMs < 500L) return
+            lastBgRedrawMs = now
+            terminal.post { terminal.onScreenUpdated() }
+        }
     }
 
     override fun onTitleChanged(changedSession: TerminalSession) {}

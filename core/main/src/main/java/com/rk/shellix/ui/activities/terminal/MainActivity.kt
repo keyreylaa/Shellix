@@ -29,6 +29,9 @@ class MainActivity : ComponentActivity() {
     private var isKeyboardVisible = false
     private var wasKeyboardOpen = false
 
+    @Volatile var isTerminalResumed = true
+        private set
+
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (!isGranted) {
@@ -80,6 +83,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        isTerminalResumed = false
         super.onStop()
         viewModel.unbindService(this)
     }
@@ -91,6 +95,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        isTerminalResumed = true
         if (wasKeyboardOpen && !isKeyboardVisible) {
             terminalViewModel.terminalView?.let { terminalView ->
                 val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager

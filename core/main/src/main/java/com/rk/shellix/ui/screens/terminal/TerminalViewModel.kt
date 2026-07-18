@@ -66,6 +66,9 @@ class TerminalViewModel : ViewModel() {
         terminal.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         terminal.attachSession(session)
         terminal.setTerminalViewClient(client)
+        // Force one immediate full redraw so a re-opened (previously throttled)
+        // background tab is never left blank on activation.
+        terminal.onScreenUpdated()
         
         terminal.post {
             val typedValue = TypedValue()
