@@ -218,21 +218,30 @@ fun FileManagerScreen(
                             // Open with: hand the file to an external viewer/app.
                             IconButton(onClick = {
                                 val file = selected.first()
-                                val intent = ShareUtil.openWithIntent(context, file)
-                                if (intent != null) {
-                                    context.startActivity(intent)
-                                } else {
-                                    toast("Cannot open this file")
+                                scope.launch(Dispatchers.IO) {
+                                    val intent = ShareUtil.openWithIntent(context, file)
+                                    withContext(Dispatchers.Main) {
+                                        if (intent != null) {
+                                            context.startActivity(intent)
+                                        } else {
+                                            toast("Cannot open this file")
+                                        }
+                                    }
                                 }
                             }) { Icon(Icons.Filled.OpenInNew, contentDescription = "Open with") }
                         }
                         // Share: send one or more files to another app via chooser.
                         IconButton(onClick = {
-                            val intent = ShareUtil.shareIntent(context, selected.toList())
-                            if (intent != null) {
-                                context.startActivity(intent)
-                            } else {
-                                toast("Cannot share selected file(s)")
+                            val files = selected.toList()
+                            scope.launch(Dispatchers.IO) {
+                                val intent = ShareUtil.shareIntent(context, files)
+                                withContext(Dispatchers.Main) {
+                                    if (intent != null) {
+                                        context.startActivity(intent)
+                                    } else {
+                                        toast("Cannot share selected file(s)")
+                                    }
+                                }
                             }
                         }) { Icon(Icons.Filled.Share, contentDescription = "Share") }
                         IconButton(onClick = { showDeleteConfirm = true }) {
