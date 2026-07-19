@@ -98,7 +98,7 @@ object FileOps {
         return c == p || c.startsWith("$p/")
     }
 
-    private fun copyRecursive(src: File, target: File) {
+    internal fun copyRecursive(src: File, target: File) {
         if (src.isDirectory) {
             if (!target.exists() && !target.mkdirs()) throw IllegalStateException("mkdir failed: ${target.name}")
             val children = src.listFiles()

@@ -69,8 +69,11 @@ object TrashUtil {
         val dest = File(destPath)
         dest.parentFile?.let { if (!it.exists()) it.mkdirs() }
         return try {
-            val ok = if (entry.renameTo(dest)) true else {
-                FileOps.copyRecursive(entry, dest).let { it is FileOps.Result.Ok }.also {
+            val ok = if (entry.renameTo(dest)) {
+                true
+            } else {
+                // Cross-mount restore: stream copy then remove the source.
+                runCatching { FileOps.copyRecursive(entry, dest) }.isSuccess.also {
                     if (it) entry.deleteRecursively()
                 }
             }
