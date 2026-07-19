@@ -363,6 +363,7 @@ private fun AddSessionDialog(onDismiss: () -> Unit, onCreateSession: (Int) -> Un
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ScreenshotResolutionDialog(
     onDismiss: () -> Unit,
