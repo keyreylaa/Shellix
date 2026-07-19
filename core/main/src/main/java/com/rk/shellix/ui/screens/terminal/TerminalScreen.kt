@@ -69,6 +69,13 @@ fun TerminalScreen(
 
     val view = LocalView.current
 
+    DisposableEffect(view) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
+    }
+
+    val sessionBinder = mainViewModel.sessionBinder
+
     val onScreenshotClick: () -> Unit = {
         val tv = terminalViewModel.terminalView
         if (tv == null) {
@@ -95,13 +102,6 @@ fun TerminalScreen(
             }
         }
     }
-
-    DisposableEffect(view) {
-        view.keepScreenOn = true
-        onDispose { view.keepScreenOn = false }
-    }
-
-    val sessionBinder = mainViewModel.sessionBinder
 
     LaunchedEffect(Unit) {
         val bgFile = context.filesDir.child("background")
