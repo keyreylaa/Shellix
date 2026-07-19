@@ -172,7 +172,26 @@ fun FileManagerScreen(
                             IconButton(onClick = { renameTarget = selected.first() }) {
                                 Icon(Icons.Filled.DriveFileRenameOutline, contentDescription = "Rename")
                             }
+                            // Open with: hand the file to an external viewer/app.
+                            IconButton(onClick = {
+                                val file = selected.first()
+                                val intent = ShareUtil.openWithIntent(context, file)
+                                if (intent != null) {
+                                    context.startActivity(intent)
+                                } else {
+                                    toast("Cannot open this file")
+                                }
+                            }) { Icon(Icons.Filled.OpenInNew, contentDescription = "Open with") }
                         }
+                        // Share: send one or more files to another app via chooser.
+                        IconButton(onClick = {
+                            val intent = ShareUtil.shareIntent(context, selected.toList())
+                            if (intent != null) {
+                                context.startActivity(intent)
+                            } else {
+                                toast("Cannot share selected file(s)")
+                            }
+                        }) { Icon(Icons.Filled.Share, contentDescription = "Share") }
                         IconButton(onClick = { showDeleteConfirm = true }) {
                             Icon(Icons.Filled.Delete, contentDescription = "Delete")
                         }
