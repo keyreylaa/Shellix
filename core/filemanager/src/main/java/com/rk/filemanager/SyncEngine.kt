@@ -21,9 +21,7 @@ import java.io.File
  */
 object SyncEngine {
 
-    data class FileSig(val modified: Long, val size: Long) {
-        fun differs(other: FileSig?): Boolean = other == null || other.modified != modified || other.size != size
-    }
+    data class FileSig(val modified: Long, val size: Long)
 
     /** Snapshot of both sides captured at the last successful sync. */
     data class SyncState(
@@ -64,8 +62,8 @@ object SyncEngine {
             val p = pNow[rel]
             val lu = last.ubuntu[rel]
             val lp = last.phone[rel]
-            val changedU = u.differs(lu)
-            val changedP = p.differs(lp)
+            val changedU = u != lu
+            val changedP = p != lp
 
             when {
                 u != null && p != null -> {

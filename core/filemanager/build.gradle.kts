@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.gson)
     implementation(libs.utilcode)
     implementation(libs.sora.editor)
     implementation(libs.sora.language.textmate)
