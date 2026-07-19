@@ -126,6 +126,7 @@ fun FileManagerScreen(
     var showNewFolder by remember { mutableStateOf(false) }
     var overwriteConfirm by remember { mutableStateOf<List<String>?>(null) }
     var openFile by remember { mutableStateOf<File?>(null) }
+    var showSync by remember { mutableStateOf(false) }
 
     // Snackbar host for the delete -> Undo flow.
     val snackbarHostState = remember { SnackbarHostState() }
@@ -175,6 +176,11 @@ fun FileManagerScreen(
     val fileToEdit = openFile
     if (fileToEdit != null) {
         CodeEditorScreen(file = fileToEdit, onBack = { openFile = null })
+        return
+    }
+
+    if (showSync) {
+        SyncScreen(ubuntuRoot = ubuntuRoot, phoneRoot = phoneRoot, onBack = { showSync = false })
         return
     }
 
@@ -254,6 +260,9 @@ fun FileManagerScreen(
                         }
                         IconButton(onClick = { showNewFile = true }) {
                             Icon(Icons.AutoMirrored.Filled.NoteAdd, contentDescription = "New file")
+                        }
+                        IconButton(onClick = { showSync = true }) {
+                            Icon(Icons.Filled.Sync, contentDescription = "Folder sync")
                         }
                     }
                 )

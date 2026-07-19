@@ -27,7 +27,8 @@ photoview = "2.3.0"
 composeRuntime = "1.10.0"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
-lifecycle = "2.10.0"
+  lifecycle = "2.10.0"
+  workmanager = "2.10.0"
 composeBom = "2025.11.01"
 coil = "2.7.0"
 ktfmt = "0.25.0"
@@ -100,7 +101,8 @@ androidx-palette = { module = "androidx.palette:palette", version.ref = "palette
 # Lifecycle
 androidx-lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
-androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle" }
+  androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle" }
+androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "workmanager" }
 
 # Activity
 androidx-activity = { module = "androidx.activity:activity", version.ref = "activity" }
