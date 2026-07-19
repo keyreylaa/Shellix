@@ -12,11 +12,11 @@ import android.os.Build
 import android.provider.MediaStore
 import androidx.core.content.FileProvider
 import com.rk.libcommons.dpToPx
+import com.rk.libcommons.ubuntuDir
 import com.rk.settings.Settings
 import com.termux.terminal.WcWidth
 import com.termux.view.TerminalView
 import java.io.File
-import com.termux.terminal.TerminalEmulator
 
 /**
  * "PC-style" terminal screenshot.
@@ -26,32 +26,52 @@ import com.termux.terminal.TerminalEmulator
  * the three traffic-light dots, and the live screen text painted with its real ANSI
  * colors + the user's active Terminal Theme (Dracula/Default/Soft Dark/...).
  *
- * Only the currently visible viewport is captured (mTopRow .. mTopRow + rows), not the
- * full scrollback buffer — a single image of tens of thousands of lines is not useful.
+ * Only the currently visible viewport is captured, not the full scrollback buffer — a
+ * single image of tens of thousands of lines is not useful.
+ *
+ * Two output resolutions are supported:
+ *  - [Mode.PHONE]  : rendered at the device font size / density (portrait, narrow).
+ *  - [Mode.DESKTOP]: re-rendered from the SAME character grid + ANSI colors at a fixed
+ *    1440px-wide landscape canvas with a proportionally larger font, so text stays sharp
+ *    (no upscaling of a small bitmap). Mirrors a real macOS Terminal screenshot.
  *
  * All disk work (MediaStore insert / staging for share) is the caller's responsibility
- * to run off the main thread; the capture + draw here is CPU-bound but bounded by the
- * visible grid size, so it is cheap enough for a tap handler.
+ * to run off the main thread; capture + draw is CPU-bound but bounded by the grid size.
  */
 
 private const val SHOTS_DIR = "fm_shots"
 private const val AUTHORITY_SUFFIX = ".fileprovider"
 
+/** Output resolution for the screenshot. */
+enum class Mode { PHONE, DESKTOP }
+
 object TerminalScreenshot {
 
-    /** Build the macOS-style window title, e.g. `shellix@RMX3201 — Session 2`. */
-    fun title(context: Context, sessionName: String?): String {
-        val device = Build.MANUFACTURER.takeIf { it.isNotBlank() }?.replaceFirstChar { it.uppercase() }
-            ?: Build.MODEL
-        val base = "shellix@$device"
-        return if (!sessionName.isNullOrBlank()) "$base — $sessionName" else base
+    /**
+     * Build the macOS-style window title from the ACTIVE PRoot session identity, e.g.
+     * `keyreyla@shellix`. The username is read live from the running session's identity
+     * file (`/etc/shellix_default_user`) — it differs per user and is never hardcoded.
+     * The host portion is the literal `shellix` that the shell prompt itself uses
+     * (see init.sh `PS1='\u@shellix'`), NOT the Android device model.
+     */
+    fun title(context: Context): String {
+        val user = readActiveUser(context) ?: "shellix"
+        return "$user@shellix"
+    }
+
+    /** Resolve the running PRoot username from the live identity file. */
+    private fun readActiveUser(context: Context): String? {
+        return runCatching {
+            val file = context.ubuntuDir().child("etc").child("shellix_default_user")
+            if (file.exists()) file.readText().trim().takeIf { it.isNotBlank() } else null
+        }.getOrNull()
     }
 
     /**
      * Render the active session of [terminalView] to a Bitmap, or null if there is no
      * live emulator yet. Only the visible viewport is drawn.
      */
-    fun capture(terminalView: TerminalView, context: Context, title: String): Bitmap? {
+    fun capture(terminalView: TerminalView, context: Context, title: String, mode: Mode = Mode.PHONE): Bitmap? {
         val emulator = terminalView.mEmulator ?: return null
         val rows = emulator.mRows
         val cols = emulator.mColumns
@@ -68,20 +88,32 @@ object TerminalScreenshot {
             ?: palette[256]
 
         val typeface = TerminalUtils.typeface
-        val textSizePx = dpToPx(Settings.terminal_font_size.toFloat(), context).toFloat()
+
+        // Desktop mode: fixed 1440px content width, font sized so the same column count
+        // fits, drawn in absolute px (density-independent target). Phone mode keeps the
+        // on-device font size expressed in dp.
+        val desktopWidthPx = 1440f
+        val fontPx = if (mode == Mode.DESKTOP) {
+            // monospace cell width ~= 0.6 * font size -> font = (width/cols) / 0.6
+            (desktopWidthPx / cols) / 0.6f
+        } else {
+            dpToPx(Settings.terminal_font_size.toFloat(), context).toFloat()
+        }
+        val px = { dp: Float -> if (mode == Mode.DESKTOP) dp else dpToPx(dp, context).toFloat() }
+
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = typeface
-            textSize = textSizePx
+            textSize = fontPx
             color = termFg
         }
         val fontWidth = paint.measureText("X")
-        val lineHeight = (textSizePx * 1.25f)
+        val lineHeight = fontPx * 1.2f
 
-        // macOS window metrics (dp -> px).
-        val titleBarH = dpToPx(34f, context).toFloat()
-        val padX = dpToPx(12f, context).toFloat()
-        val padY = dpToPx(10f, context).toFloat()
-        val radius = dpToPx(12f, context).toFloat()
+        // macOS window metrics.
+        val titleBarH = px(34f)
+        val padX = px(12f)
+        val padY = px(10f)
+        val radius = px(12f)
 
         val contentW = fontWidth * cols
         val contentH = lineHeight * rows
@@ -105,7 +137,7 @@ object TerminalScreenshot {
         canvas.drawLine(0f, titleBarH, windowW, titleBarH, sepPaint)
 
         // Traffic-light dots.
-        val dotR = dpToPx(6f, context).toFloat()
+        val dotR = px(6f)
         val dotY = titleBarH / 2f
         val dotX0 = padX
         drawDot(canvas, dotX0, dotY, dotR, Color.parseColor("#FF5F56"))
@@ -115,7 +147,7 @@ object TerminalScreenshot {
         // Title text.
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = Typeface.create(typeface, Typeface.NORMAL)
-            textSize = dpToPx(12f, context).toFloat()
+            textSize = px(12f)
             color = blend(termFg, termBg, 0.35f)
         }
         val titleX = dotX0 + dotR * 7f
@@ -134,7 +166,7 @@ object TerminalScreenshot {
         val transcriptBase = buffer.activeTranscriptRows
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = typeface
-            textSize = textSizePx
+            textSize = fontPx
         }
         val baseline = titleBarH + padY
         for (r in 0 until rows) {

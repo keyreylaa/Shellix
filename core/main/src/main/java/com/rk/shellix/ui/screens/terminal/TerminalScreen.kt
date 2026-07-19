@@ -76,20 +76,28 @@ fun TerminalScreen(
 
     val sessionBinder = mainViewModel.sessionBinder
 
+    var showScreenshotChoice by remember { mutableStateOf(false) }
+
     val onScreenshotClick: () -> Unit = clickHandler@ {
         val tv = terminalViewModel.terminalView
         if (tv == null) {
             toast("Terminal not ready")
             return@clickHandler
         }
-        val name = sessionBinder?.getService()?.run {
-            currentSession.value.first.let { sessionList[it]?.name }
+        showScreenshotChoice = true
+    }
+
+    fun doScreenshot(mode: Mode) {
+        val tv = terminalViewModel.terminalView ?: run {
+            toast("Terminal not ready")
+            return
         }
         scope.launch(Dispatchers.IO) {
-            val title = TerminalScreenshot.title(context, name)
+            val title = TerminalScreenshot.title(context)
             val stamp = System.currentTimeMillis()
-            val displayName = "Shellix-$stamp"
-            val bitmap = TerminalScreenshot.capture(tv, context, title)
+            val tag = if (mode == Mode.DESKTOP) "-desktop" else ""
+            val displayName = "Shellix-$stamp$tag"
+            val bitmap = TerminalScreenshot.capture(tv, context, title, mode)
             if (bitmap == null) {
                 withContext(Dispatchers.Main) { toast("Nothing to capture") }
                 return@launch
@@ -101,6 +109,16 @@ fun TerminalScreen(
                 share?.let { context.startActivity(it) }
             }
         }
+    }
+
+    if (showScreenshotChoice) {
+        ScreenshotResolutionDialog(
+            onDismiss = { showScreenshotChoice = false },
+            onChoose = { mode ->
+                showScreenshotChoice = false
+                doScreenshot(mode)
+            }
+        )
     }
 
     LaunchedEffect(Unit) {
@@ -340,6 +358,27 @@ private fun AddSessionDialog(onDismiss: () -> Unit, onCreateSession: (Int) -> Un
                 title = { Text("Android") },
                 description = { Text(stringResource(strings.android_desc)) },
                 onClick = { onCreateSession(WorkingMode.ANDROID) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ScreenshotResolutionDialog(
+    onDismiss: () -> Unit,
+    onChoose: (Mode) -> Unit
+) {
+    BasicAlertDialog(onDismissRequest = onDismiss) {
+        PreferenceGroup(heading = { Text("Screenshot resolution") }) {
+            SettingsCard(
+                title = { Text("Phone resolution") },
+                description = { Text("Rendered at the device font size (portrait).") },
+                onClick = { onChoose(Mode.PHONE) }
+            )
+            SettingsCard(
+                title = { Text("Desktop (macOS style)") },
+                description = { Text("1440px-wide landscape, sharper text.") },
+                onClick = { onChoose(Mode.DESKTOP) }
             )
         }
     }
