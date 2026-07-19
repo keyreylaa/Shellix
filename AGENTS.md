@@ -39,6 +39,33 @@ Compact guidance for agents working in the **Shellix** repo (Android/Kotlin, a r
 - **About screen renders the live GitHub Wiki `Home.md`** via OkHttp (single source of truth). Keep the Wiki as the doc SSOT; do not duplicate long-form docs in-app.
 - **Version bumps live in `app/build.gradle.kts`** (`versionCode`, `versionName`). `verify.sh` reads them for the version-consistency check.
 
+## Features shipped (v1.3.1 surface — do not break without intent)
+- **File Manager extras** (`core:filemanager`, package `com.rk.filemanager`): swipe
+  back/forward nav (back/forward stacks in `FileManagerScreen.kt`), **Undo delete**
+  via `TrashUtil` (`fm_trash` + `.meta`), **progress + cancel** on copy/move
+  (`FileOps.copyRecursive` takes `progress`/`cancelled`, returns `Result.Cancelled`,
+  deletes partial on cancel), and **two-way folder sync** (`SyncEngine` pure diff/merge
+  + `SyncWorker` `WorkManager` 15-min periodic + "Sync now"). None of these may depend
+  on `core:main` (boundary rule above).
+- **Open with / Share** (`ShareUtil.kt`): stages files into `filesDir/fm_share` and
+  serves via FileProvider (`${applicationId}.fileprovider`). Disk staging MUST stay
+  off the main thread (`Dispatchers.IO`) — a main-thread copy caused an ANR on large
+  Ubuntu files (realme RMX3201). The `fm_share` path is declared in
+  `core/main/src/main/res/xml/file_paths.xml`.
+- **PC-style terminal screenshot** (`TerminalScreenshot.kt`, `TerminalScreen.kt`
+  top-bar button next to `+`): re-renders the active session into a macOS-style
+  window. Title identity is read **live** from `/etc/shellix_default_user` + host
+  literal `shellix` (NOT `Build.MODEL`, NOT hardcoded). Two modes: PHONE (device
+  font) and DESKTOP (1440px-wide landscape, font sized from `1440/cols/0.6`,
+  re-rendered from the grid — never upscale). Saves to `Pictures/Shellix` via
+  MediaStore, shares via `fm_shots` FileProvider path (also in `file_paths.xml`).
+  Renders only the visible viewport (buffer `activeTranscriptRows` window), not
+  scrollback. termux `mTopRow` is package-private — derive the window from the
+  buffer instead.
+- **Two-step verification** (`Settings.two_step_verify`, default off; `ConfirmDialog`
+  composable in `ui/components`): when on, `TerminalDrawer` requires a confirm tap
+  before clearing the terminal or terminating a session.
+
 ## Conventions
 - Commit small, push frequently (CI is the only build check).
 - Internal tooling (`.kilo/`, `.agents/`, `docs/superpowers/`, `shellix_rebrand.sh`) is gitignored — never commit it. Specs/plans go in `docs/specs/` and `docs/plans/` (NOT `docs/superpowers/`).
