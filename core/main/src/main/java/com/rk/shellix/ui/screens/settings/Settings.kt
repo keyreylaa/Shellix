@@ -145,6 +145,14 @@ fun Settings(
             )
 
             SettingsToggle(
+                label = "Two-step verification",
+                description = "Require a confirmation tap before clearing the terminal or closing a session.",
+                showSwitch = true,
+                default = Settings.two_step_verify,
+                sideEffect = { Settings.two_step_verify = it }
+            )
+
+            SettingsToggle(
                 label = stringResource(strings.all_file_access),
                 description = stringResource(strings.all_file_access_desc),
                 showSwitch = false,

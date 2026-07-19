@@ -55,6 +55,14 @@ object Settings {
         get() = Preference.getBoolean(key = "setup_user_done", default = false)
         set(value) = Preference.setBoolean(key = "setup_user_done", value)
 
+    /**
+     * When enabled, destructive terminal actions (clear screen, terminate session,
+     * submit a spoken command) require a second confirmation tap.
+     */
+    var two_step_verify: Boolean
+        get() = Preference.getBoolean(key = "two_step_verify", default = false)
+        set(value) = Preference.setBoolean(key = "two_step_verify", value)
+
     var input_mode
         get() = Preference.getInt(key = "input_mode", default = InputMode.DEFAULT)
         set(value) = Preference.setInt(key = "input_mode", value)
