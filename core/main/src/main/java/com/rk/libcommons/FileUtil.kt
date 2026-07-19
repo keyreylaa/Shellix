@@ -23,7 +23,20 @@ fun Context.ubuntuDir(): File {
 }
 
 fun Context.ubuntuHomeDir(): File {
-    return ubuntuDir().child("root").also {
+    val base = ubuntuDir()
+    // The active PRoot session runs as the user from /etc/shellix_default_user
+    // (see init.sh: `exec su - "$DEFAULT_USER"`), whose home is /home/<user>.
+    // The File Manager was previously hardcoding .../ubuntu/root, which only ever
+    // holds the root skeleton (.bashrc/.profile) and is NOT where the shell session
+    // actually lives. Resolve the real home so the listing matches `ls -la ~`.
+    val defaultUserFile = base.child("etc").child("shellix_default_user")
+    val home = if (defaultUserFile.exists()) {
+        val user = defaultUserFile.readText().trim().takeIf { it.isNotBlank() }
+        if (user != null) base.child("home").child(user) else base.child("root")
+    } else {
+        base.child("root")
+    }
+    return home.also {
         if (!it.exists()) {
             it.mkdirs()
         }

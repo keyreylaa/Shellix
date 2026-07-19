@@ -1,11 +1,18 @@
 package com.rk.filemanager
 
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
 /**
  * Pure file-system operations for the file manager. All destructive callers
  * (delete, overwrite-on-paste) must confirm with the user in the UI layer first;
  * these functions do the work once confirmed.
+ *
+ * The two realms (Ubuntu Files = app-private exec mount, Phone Storage = FUSE
+ * /sdcard) live on DIFFERENT filesystems. `File.renameTo` silently fails across
+ * mount points, so cross-realm copy/move MUST use a byte-stream copy rather than
+ * rename. `copyRecursive` below always streams, which is correct in both cases.
  */
 object FileOps {
 
@@ -29,9 +36,9 @@ object FileOps {
         }
         copyRecursive(src, target)
         Result.Ok
-    }.getOrElse { Result.Error(it.message ?: "Copy failed") }
+    }.getOrElse { Result.Error("Copy failed: ${it.message ?: it::class.simpleName}") }
 
-    /** Move (cut+paste) [src] into [destDir]. Falls back to copy+delete across mounts. */
+    /** Move (cut+paste) [src] into [destDir]. Uses a stream copy across filesystems. */
     fun moveInto(src: File, destDir: File): Result = runCatching {
         val target = File(destDir, src.name)
         if (src.absolutePath == target.absolutePath) {
@@ -41,13 +48,13 @@ object FileOps {
             return Result.Error("Cannot move a folder into itself")
         }
         if (target.exists()) target.deleteRecursively()
-        if (!src.renameTo(target)) {
-            // Cross-realm (app-private <-> /sdcard FUSE) rename fails; copy then delete.
-            copyRecursive(src, target)
-            src.deleteRecursively()
-        }
+        // Never trust renameTo across the Ubuntu <-> Phone Storage boundary
+        // (app-private exec mount vs FUSE /sdcard). Always stream-copy, then
+        // remove the source so the move is atomic-ish and works both realms.
+        copyRecursive(src, target)
+        src.deleteRecursively()
         Result.Ok
-    }.getOrElse { Result.Error(it.message ?: "Move failed") }
+    }.getOrElse { Result.Error("Move failed: ${it.message ?: it::class.simpleName}") }
 
     fun delete(file: File): Result = runCatching {
         if (!file.deleteRecursively()) return Result.Error("Could not delete ${file.name}")
@@ -94,10 +101,16 @@ object FileOps {
     private fun copyRecursive(src: File, target: File) {
         if (src.isDirectory) {
             if (!target.exists() && !target.mkdirs()) throw IllegalStateException("mkdir failed: ${target.name}")
-            src.listFiles()?.forEach { copyRecursive(it, File(target, it.name)) }
+            val children = src.listFiles()
+                ?: throw IllegalStateException("Cannot read directory: ${src.absolutePath} (permission denied?)")
+            children.forEach { copyRecursive(it, File(target, it.name)) }
         } else {
             target.parentFile?.let { if (!it.exists()) it.mkdirs() }
-            src.copyTo(target, overwrite = true)
+            FileInputStream(src).use { inStream ->
+                FileOutputStream(target).use { outStream ->
+                    inStream.copyTo(outStream)
+                }
+            }
         }
     }
 }
