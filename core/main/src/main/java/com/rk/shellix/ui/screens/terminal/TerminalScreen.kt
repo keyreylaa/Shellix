@@ -369,7 +369,7 @@ private fun ScreenshotResolutionDialog(
     onChoose: (Mode) -> Unit
 ) {
     BasicAlertDialog(onDismissRequest = onDismiss) {
-        PreferenceGroup(heading = { Text("Screenshot resolution") }) {
+        PreferenceGroup(heading = "Screenshot resolution") {
             SettingsCard(
                 title = { Text("Phone resolution") },
                 description = { Text("Rendered at the device font size (portrait).") },
