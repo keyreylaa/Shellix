@@ -76,11 +76,11 @@ fun TerminalScreen(
 
     val sessionBinder = mainViewModel.sessionBinder
 
-    val onScreenshotClick: () -> Unit = {
+    val onScreenshotClick: () -> Unit = clickHandler@ {
         val tv = terminalViewModel.terminalView
         if (tv == null) {
             toast("Terminal not ready")
-            return@onScreenshotClick
+            return@clickHandler
         }
         val name = sessionBinder?.getService()?.run {
             currentSession.value.first.let { sessionList[it]?.name }
