@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -123,6 +124,10 @@ fun FileManagerScreen(
     var overwriteConfirm by remember { mutableStateOf<List<String>?>(null) }
     var openFile by remember { mutableStateOf<File?>(null) }
 
+    // Snackbar host for the delete -> Undo flow.
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
     fun clearSelection() = selected.clear()
 
     fun doPaste() {
@@ -152,6 +157,7 @@ fun FileManagerScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (selecting) {
                 TopAppBar(
@@ -337,11 +343,32 @@ fun FileManagerScreen(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("Delete ${victims.size} item(s)?") },
-            text = { Text("This permanently deletes the selected files/folders. This cannot be undone.") },
+            text = { Text("Items are moved to trash and can be restored for a few seconds via Undo.") },
             confirmButton = {
                 TextButton(onClick = {
-                    victims.forEach { val r = FileOps.delete(it); if (r is FileOps.Result.Error) toast(r.message) }
-                    clearSelection(); refresh(); showDeleteConfirm = false
+                    // Soft-delete: move into trash, then offer an Undo window.
+                    val entries = victims.mapNotNull { TrashUtil.trash(context, it) }
+                    if (entries.size < victims.size) {
+                        toast("Some items could not be trashed")
+                    }
+                    clearSelection()
+                    refresh()
+                    showDeleteConfirm = false
+                    if (entries.isNotEmpty()) {
+                        scope.launch {
+                            val result = snackbarHostState.showSnackbar(
+                                message = "${entries.size} item(s) moved to trash",
+                                actionLabel = "Undo",
+                                duration = SnackbarDuration.Short
+                            )
+                            if (result == SnackbarResult.ActionPerformed) {
+                                entries.forEach { if (!TrashUtil.restore(context, it)) toast("Restore failed") }
+                                refresh()
+                            } else {
+                                entries.forEach { TrashUtil.purge(it) }
+                            }
+                        }
+                    }
                 }) { Text("Delete") }
             },
             dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") } }
