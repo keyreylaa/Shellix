@@ -70,20 +70,18 @@ fun TerminalScreen(
     val view = LocalView.current
 
     val onScreenshotClick: () -> Unit = {
-        val tv = terminalViewModel.terminalView ?: run {
+        val tv = terminalViewModel.terminalView
+        if (tv == null) {
             toast("Terminal not ready")
-            return@let
+            return@onScreenshotClick
         }
-        val sessionName = sessionBinder
-            ?.getService()
-            ?.currentSession
-            ?.value
-            ?.first
-            ?.let { sessionBinder.getService().sessionList[it]?.name }
+        val name = sessionBinder?.getService()?.run {
+            currentSession.value.first.let { sessionList[it]?.name }
+        }
         scope.launch(Dispatchers.IO) {
-            val title = TerminalScreenshot.title(context, sessionName)
+            val title = TerminalScreenshot.title(context, name)
             val stamp = System.currentTimeMillis()
-            val displayName = "Shellix-${stamp}"
+            val displayName = "Shellix-$stamp"
             val bitmap = TerminalScreenshot.capture(tv, context, title)
             if (bitmap == null) {
                 withContext(Dispatchers.Main) { toast("Nothing to capture") }

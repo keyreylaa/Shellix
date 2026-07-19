@@ -126,16 +126,19 @@ object TerminalScreenshot {
         val bgPaint = Paint().apply { color = termBg }
         canvas.drawRect(padX, titleBarH, padX + contentW, titleBarH + contentH, bgPaint)
 
-        // Text rows.
-        val topRow = terminalView.mTopRow
+        // Text rows. termux indexes the screen buffer by "external row" where the
+        // visible viewport is the last `rows` lines: [activeTranscriptRows, +rows).
+        // (mTopRow is package-private in TerminalView, so derive the window from the
+        // buffer instead — correct for the non-scrolled current view.)
         val buffer = emulator.getScreen()
+        val transcriptBase = buffer.activeTranscriptRows
         val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.typeface = typeface
             textSize = textSizePx
         }
         val baseline = titleBarH + padY
         for (r in 0 until rows) {
-            val externalRow = topRow + r
+            val externalRow = transcriptBase + r
             val line = runCatching { buffer.allocateFullLineIfNecessary(externalRow) }.getOrNull()
                 ?: continue
             val y = baseline + r * lineHeight + lineHeight * 0.82f
@@ -202,11 +205,9 @@ object TerminalScreenshot {
         val p = Paint(base).apply {
             color = fg
             if (bold) isFakeBoldText = true
-            if ((effect and 0x2) != 0) isItalic = true
+            if ((effect and 0x2) != 0) textSkewX = -0.25f
             if ((effect and 0x4) != 0) isUnderlineText = true
-            if ((effect and 0x40) != 0) {
-                isStrikeThruText = true
-            }
+            if ((effect and 0x40) != 0) isStrikeThruText = true
         }
         canvas.drawText(String(Character.toChars(codePoint)), x, y, p)
     }
