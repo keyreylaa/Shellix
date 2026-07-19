@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import android.widget.Toast
@@ -75,6 +77,38 @@ fun FileManagerScreen(
     val entries by remember(current, refreshTick, realm) { mutableStateOf(listDir(current)) }
     fun refresh() { refreshTick++ }
 
+    // Navigation history (swipe back/forward). `backStack` holds dirs we came FROM,
+    // `forwardStack` holds dirs we went back FROM, so a forward swipe can redo.
+    val backStack = remember(realm) { mutableStateListOf<File>() }
+    val forwardStack = remember(realm) { mutableStateListOf<File>() }
+
+    /** Go to [dir], recording history so swipe-back works. */
+    fun navigateTo(dir: File) {
+        if (dir.absolutePath != current.absolutePath) {
+            backStack.add(current)
+            forwardStack.clear()
+            current = dir
+        }
+    }
+
+    /** Swipe-back: pop the last visited dir. Returns true if it moved. */
+    fun navigateBack(): Boolean {
+        if (backStack.isEmpty()) return false
+        val prev = backStack.removeAt(backStack.lastIndex)
+        forwardStack.add(current)
+        current = prev
+        return true
+    }
+
+    /** Swipe-forward: redo a dir we navigated back from. Returns true if it moved. */
+    fun navigateForward(): Boolean {
+        if (forwardStack.isEmpty()) return false
+        val next = forwardStack.removeAt(forwardStack.lastIndex)
+        backStack.add(current)
+        current = next
+        return true
+    }
+
     // selection + clipboard
     val selected = remember(current, realm) { mutableStateListOf<File>() }
     var clipboard by remember { mutableStateOf<List<File>>(emptyList()) }
@@ -111,6 +145,7 @@ fun FileManagerScreen(
     BackHandler(enabled = true) {
         when {
             selecting -> clearSelection()
+            navigateBack() -> { /* moved to previous dir via history */ }
             current.absolutePath != root.absolutePath && current.parentFile != null -> current = current.parentFile!!
             else -> onBack()
         }
@@ -197,46 +232,63 @@ fun FileManagerScreen(
             }
 
             val crumbs = breadcrumbs(root, current, if (realm == StorageRealm.UBUNTU) "Ubuntu" else "Phone")
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Swipe horizontally to navigate folder history (back/forward), like a
+            // desktop file manager. Horizontal drag is isolated from the LazyColumn's
+            // vertical scroll by Compose's axis distinction; disabled while selecting
+            // so it never fights with the long-press select gesture.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(selecting) {
+                        if (selecting) return@pointerInput
+                        detectHorizontalDragGestures { _, dragAmount ->
+                            if (dragAmount > 0) navigateBack() else navigateForward()
+                        }
+                    }
             ) {
-                crumbs.forEachIndexed { i, (label, dir) ->
-                    if (i > 0) Text(" / ", style = MaterialTheme.typography.bodyMedium)
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (i == crumbs.lastIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.clickable { current = dir }
-                    )
-                }
-            }
-            HorizontalDivider()
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        crumbs.forEachIndexed { i, (label, dir) ->
+                            if (i > 0) Text(" / ", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (i == crumbs.lastIndex) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.clickable { navigateTo(dir) }
+                            )
+                        }
+                    }
+                    HorizontalDivider()
 
-            if (entries.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Empty folder", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(entries, key = { it.file.absolutePath }) { entry ->
-                        FileRow(
-                            entry = entry,
-                            selected = selected.contains(entry.file),
-                            onClick = {
-                                if (selecting) {
-                                    if (!selected.remove(entry.file)) selected.add(entry.file)
-                                } else if (entry.isDirectory) {
-                                    current = entry.file
-                                } else {
-                                    openFile = entry.file
-                                }
-                            },
-                            onLongClick = {
-                                if (!selected.remove(entry.file)) selected.add(entry.file)
+                    if (entries.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Empty folder", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(entries, key = { it.file.absolutePath }) { entry ->
+                                FileRow(
+                                    entry = entry,
+                                    selected = selected.contains(entry.file),
+                                    onClick = {
+                                        if (selecting) {
+                                            if (!selected.remove(entry.file)) selected.add(entry.file)
+                                        } else if (entry.isDirectory) {
+                                            navigateTo(entry.file)
+                                        } else {
+                                            openFile = entry.file
+                                        }
+                                    },
+                                    onLongClick = {
+                                        if (!selected.remove(entry.file)) selected.add(entry.file)
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
                 }
             }
