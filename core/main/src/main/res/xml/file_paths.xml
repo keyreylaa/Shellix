@@ -3,4 +3,14 @@
     <external-path
         name="external_files"
         path="." />
+    <!-- Scoped staging dir for "Open with" / share: Ubuntu (app-internal) files are
+         stream-copied here before being exposed via FileProvider content URI.
+         Narrow path range per Android security guidance (no root-path / no "."). -->
+    <files-path
+        name="fm_share"
+        path="fm_share/" />
+    <!-- Staging dir for terminal screenshots shared via ACTION_SEND. -->
+    <files-path
+        name="fm_shots"
+        path="fm_shots/" />
 </paths>

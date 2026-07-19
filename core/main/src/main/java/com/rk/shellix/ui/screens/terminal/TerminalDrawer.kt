@@ -20,7 +20,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.rk.resources.strings
+import com.rk.settings.Settings
 import com.rk.shellix.service.SessionService
+import com.rk.shellix.ui.components.ConfirmDialog
 import com.rk.shellix.ui.routes.MainActivityRoutes
 
 @Composable
@@ -32,6 +34,10 @@ fun TerminalDrawer(
     onClearClick: () -> Unit,
     onSessionSelected: (String) -> Unit
 ) {
+    // Two-step verification gate for destructive actions.
+    var confirmClear by remember { mutableStateOf(false) }
+    var confirmTerminateId by remember { mutableStateOf<String?>(null) }
+    val twoStep = Settings.two_step_verify
     ModalDrawerSheet(modifier = Modifier.width(drawerWidth)) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -74,7 +80,9 @@ fun TerminalDrawer(
                         Icon(Icons.Outlined.Folder, contentDescription = "File Manager")
                     }
 
-                    IconButton(onClick = onClearClick) {
+                    IconButton(onClick = {
+                        if (twoStep) confirmClear = true else onClearClick()
+                    }) {
                         Icon(Icons.Default.Delete, contentDescription = "Clear")
                     }
                 }
@@ -100,7 +108,10 @@ fun TerminalDrawer(
                                 if (!isSelected) {
                                     Spacer(modifier = Modifier.weight(1f))
                                     IconButton(
-                                        onClick = { sessionBinder.terminateSession(sessionId) },
+                                        onClick = {
+                                            if (twoStep) confirmTerminateId = sessionId
+                                            else sessionBinder.terminateSession(sessionId)
+                                        },
                                         modifier = Modifier.size(24.dp)
                                     ) {
                                         Icon(
@@ -114,6 +125,30 @@ fun TerminalDrawer(
                         }
                     }
                 }
+            }
+
+            if (confirmClear) {
+                ConfirmDialog(
+                    title = "Clear terminal?",
+                    text = "This erases the visible terminal output for the current session.",
+                    onDismiss = { confirmClear = false },
+                    onConfirm = {
+                        confirmClear = false
+                        onClearClick()
+                    }
+                )
+            }
+
+            confirmTerminateId?.let { id ->
+                ConfirmDialog(
+                    title = "Close session?",
+                    text = "Closing this session discards its scrollback and any running process.",
+                    onDismiss = { confirmTerminateId = null },
+                    onConfirm = {
+                        confirmTerminateId = null
+                        sessionBinder?.terminateSession(id)
+                    }
+                )
             }
         }
     }

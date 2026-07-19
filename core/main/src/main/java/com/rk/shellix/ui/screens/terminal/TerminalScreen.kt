@@ -68,12 +68,58 @@ fun TerminalScreen(
     var renameText by remember { mutableStateOf("") }
 
     val view = LocalView.current
+
     DisposableEffect(view) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }
     }
 
     val sessionBinder = mainViewModel.sessionBinder
+
+    var showScreenshotChoice by remember { mutableStateOf(false) }
+
+    val onScreenshotClick: () -> Unit = clickHandler@ {
+        val tv = terminalViewModel.terminalView
+        if (tv == null) {
+            toast("Terminal not ready")
+            return@clickHandler
+        }
+        showScreenshotChoice = true
+    }
+
+    fun doScreenshot(mode: Mode) {
+        val tv = terminalViewModel.terminalView ?: run {
+            toast("Terminal not ready")
+            return
+        }
+        scope.launch(Dispatchers.IO) {
+            val title = TerminalScreenshot.title(context)
+            val stamp = System.currentTimeMillis()
+            val tag = if (mode == Mode.DESKTOP) "-desktop" else ""
+            val displayName = "Shellix-$stamp$tag"
+            val bitmap = TerminalScreenshot.capture(tv, context, title, mode)
+            if (bitmap == null) {
+                withContext(Dispatchers.Main) { toast("Nothing to capture") }
+                return@launch
+            }
+            val saved = TerminalScreenshot.saveToGallery(context, bitmap, displayName)
+            val share = TerminalScreenshot.shareIntent(context, bitmap, displayName)
+            withContext(Dispatchers.Main) {
+                if (saved != null) toast("Saved to Pictures/Shellix")
+                share?.let { context.startActivity(it) }
+            }
+        }
+    }
+
+    if (showScreenshotChoice) {
+        ScreenshotResolutionDialog(
+            onDismiss = { showScreenshotChoice = false },
+            onChoose = { mode ->
+                showScreenshotChoice = false
+                doScreenshot(mode)
+            }
+        )
+    }
 
     LaunchedEffect(Unit) {
         val bgFile = context.filesDir.child("background")
@@ -167,6 +213,7 @@ fun TerminalScreen(
                         sessionBinder = sessionBinder,
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onAddClick = { showAddDialog = true },
+                        onScreenshotClick = onScreenshotClick,
                         onMicClick = {
                             VoiceInput.toggle(
                                 activity = mainActivity,
@@ -311,6 +358,28 @@ private fun AddSessionDialog(onDismiss: () -> Unit, onCreateSession: (Int) -> Un
                 title = { Text("Android") },
                 description = { Text(stringResource(strings.android_desc)) },
                 onClick = { onCreateSession(WorkingMode.ANDROID) }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ScreenshotResolutionDialog(
+    onDismiss: () -> Unit,
+    onChoose: (Mode) -> Unit
+) {
+    BasicAlertDialog(onDismissRequest = onDismiss) {
+        PreferenceGroup(heading = "Screenshot resolution") {
+            SettingsCard(
+                title = { Text("Phone resolution") },
+                description = { Text("Rendered at the device font size (portrait).") },
+                onClick = { onChoose(Mode.PHONE) }
+            )
+            SettingsCard(
+                title = { Text("Desktop (macOS style)") },
+                description = { Text("1440px-wide landscape, sharper text.") },
+                onClick = { onChoose(Mode.DESKTOP) }
             )
         }
     }

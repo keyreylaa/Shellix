@@ -7,6 +7,13 @@ on:
       - master
     paths-ignore:
       - '**/*.md'
+  pull_request:
+    branches:
+      - main
+      - dev
+      - master
+    paths-ignore:
+      - '**/*.md'
   workflow_dispatch:
 
 jobs:
@@ -40,6 +47,11 @@ jobs:
         id: commit_hash
         run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
+      - name: Set PR suffix
+        id: pr_suffix
+        if: github.event_name == 'pull_request'
+        run: echo "ARTIFACT_SUFFIX=-pr${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+
       - name: Build with Gradle
         run: ./gradlew assembleRelease && mv app/build/outputs/apk/release/*.apk app/shellix-${{ env.COMMIT_HASH }}.apk
         env:
@@ -50,7 +62,7 @@ jobs:
       - name: Archive APK
         uses: actions/upload-artifact@v4
         with:
-          name: Shellix-Release
+          name: Shellix-Release${{ env.ARTIFACT_SUFFIX }}
           path: app/shellix-${{ env.COMMIT_HASH }}.apk
 
       - name: Delete xed.keystore and signing.properties

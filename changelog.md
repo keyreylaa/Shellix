@@ -1,5 +1,47 @@
 # Changelog
 
+## Shellix v1.3.1 — File Manager power tools, macOS-style screenshot & guardrails
+_2026-07-19_
+
+### Added
+- **Swipe navigation in File Manager:** swipe left/right on the file list to go back /
+  forward through the navigation history (back stack + forward stack).
+- **Undo delete:** deleted files/folders are moved to an app-private trash
+  (`fm_trash`) with a sidecar `.meta`; a Snackbar **Undo** restores them. Collisions
+  are handled with a numeric suffix.
+- **Copy / move progress + cancel:** long operations show a linear progress indicator
+  with a Cancel action; cancelling deletes the partial destination and preserves the
+  source. Stream-copied across the Ubuntu ↔ Phone Storage boundary (no `renameTo`).
+- **Folder sync (two-way):** pair an Ubuntu folder with a Phone Storage folder; a
+  pure diff/merge engine syncs on last-write-wins (conflicts saved as
+  `.conflict-<ts>`), driven by a `WorkManager` periodic (15-min) worker + a manual
+  "Sync now" button.
+- **Open with / Share:** files are staged into a scoped `fm_share` directory and
+  exposed via FileProvider (`ACTION_VIEW` / `ACTION_SEND`) — works for app-private
+  Ubuntu files too. Disk staging runs off the main thread (fixes an ANR on large
+  files).
+- **PC-style terminal screenshot:** a top-bar button re-renders the active session
+  into a macOS-style window (rounded frame, traffic-light dots, real ANSI colors +
+  active theme). The title uses the **live** PRoot identity (`<user>@shellix`). Two
+  output resolutions: device (portrait) and a 1440px-wide landscape "Desktop" mode
+  re-rendered from the character grid (sharp, no upscaling). Saved to
+  `Pictures/Shellix` via MediaStore and offered for immediate share.
+- **Two-step verification:** a setting (off by default) that requires a confirmation
+  tap before clearing the terminal or closing a session — closing previously
+  unguarded destructive gaps.
+
+### Fixed
+- **ANR on share/open-with:** staging a file into `fm_share` no longer runs on the
+  main thread (moved to `Dispatchers.IO`); the activity is started back on the UI
+  thread.
+
+### Build / CI
+- Version bumped to `1.3.1` (code 6).
+- `android.yml` now also builds the APK on pull requests (artifact
+  `Shellix-Release-pr<N>`), so PRs get a real compile + APK signal.
+
+---
+
 ## Shellix v1.3.0-beta — Performance, File Manager, Editor & Polish
 _2026-07-19_
 

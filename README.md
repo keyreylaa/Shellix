@@ -4,7 +4,7 @@
 [![Verify](https://github.com/keyreylaa/Shellix/actions/workflows/verify.yml/badge.svg)](https://github.com/keyreylaa/Shellix/actions/workflows/verify.yml)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/keyreylaa/Shellix/blob/master/LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Android%206.0%2B-green.svg)](https://github.com/keyreylaa/Shellix)
-[![Version](https://img.shields.io/badge/version-1.3.0--beta-blue.svg)](https://github.com/keyreylaa/Shellix/releases)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](https://github.com/keyreylaa/Shellix/releases)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.x-7F52FF.svg)](https://kotlinlang.org)
 [![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04%20Noble-E95420.svg)](https://ubuntu.com)
 [![PRoot](https://img.shields.io/badge/sandbox-PRoot-orange.svg)](https://proot-me.github.io)
@@ -48,6 +48,14 @@ job runs in the background.
   safety preview.
 - **Voice input, custom wallpaper, custom font, Keep‑screen‑on**, configurable keyboard
   shortcuts, and an **About** screen that renders the live project Wiki.
+- **Two‑way Folder Sync** — pair an Ubuntu folder with phone storage and keep them in
+  sync (last‑write‑wins, conflict files preserved). Runs on a battery‑safe 15‑min
+  `WorkManager` cycle with a manual "Sync now".
+- **PC‑style screenshot** — capture the active terminal as a macOS‑style window
+  (traffic‑light dots, real ANSI colors, your active theme) at phone or a sharp
+  1440px desktop resolution; saved to `Pictures/Shellix` and shareable instantly.
+- **Two‑step verification** — optional confirmation tap before clearing the terminal
+  or closing a session, so destructive actions can't be triggered by accident.
 - **Proactive crash notice** — if the app crashed last run, you're offered the report on
   next launch (once per crash), backed by an in‑app diagnostics log you can copy.
 
