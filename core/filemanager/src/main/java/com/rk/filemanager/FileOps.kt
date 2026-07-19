@@ -3,6 +3,8 @@ package com.rk.filemanager
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Pure file-system operations for the file manager. All destructive callers
@@ -18,15 +20,39 @@ object FileOps {
 
     sealed interface Result {
         data object Ok : Result
+        data object Cancelled : Result
         data class Error(val message: String) : Result
     }
+
+    /** Copy/move progress: [done] of [total] bytes (total may be 0 if unknown). */
+    data class Progress(val done: Long, val total: Long)
+
+    /** Thrown internally when a copy is cancelled mid-stream. */
+    private class CancelledException : RuntimeException()
 
     /** True if pasting [sources] into [destDir] would overwrite an existing name. */
     fun collisions(sources: List<File>, destDir: File): List<String> =
         sources.filter { File(destDir, it.name).exists() }.map { it.name }
 
-    /** Recursively copy [src] into [destDir] (keeping the source). */
-    fun copyInto(src: File, destDir: File): Result = runCatching {
+    /**
+     * Total size in bytes of everything under [file] (files only). Used to drive
+     * the progress bar. Returns 0 for an empty/unreadable tree.
+     */
+    fun totalBytes(file: File): Long = runCatching {
+        if (file.isFile) return@runCatching file.length()
+        file.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+    }.getOrDefault(0L)
+
+    /**
+     * Recursively copy [src] into [destDir] (keeping the source), reporting
+     * [Progress] and honouring cancellation via [cancelled].
+     */
+    fun copyInto(
+        src: File,
+        destDir: File,
+        progress: (Progress) -> Unit = {},
+        cancelled: () -> Boolean = { false }
+    ): Result = runCatching {
         val target = File(destDir, src.name)
         if (src.absolutePath == target.absolutePath) {
             return Result.Error("Source and destination are the same")
@@ -34,12 +60,31 @@ object FileOps {
         if (isSubPath(parent = src, child = destDir)) {
             return Result.Error("Cannot copy a folder into itself")
         }
-        copyRecursive(src, target)
+        val total = totalBytes(src)
+        try {
+            copyRecursive(src, target, progress, cancelled, total, AtomicLong(0L))
+        } catch (_: CancelledException) {
+            target.deleteRecursively() // never leave a half-written tree
+            return Result.Cancelled
+        }
+        if (cancelled()) {
+            target.deleteRecursively()
+            return Result.Cancelled
+        }
         Result.Ok
     }.getOrElse { Result.Error("Copy failed: ${it.message ?: it::class.simpleName}") }
 
-    /** Move (cut+paste) [src] into [destDir]. Uses a stream copy across filesystems. */
-    fun moveInto(src: File, destDir: File): Result = runCatching {
+    /**
+     * Move (cut+paste) [src] into [destDir]. Stream-copies across filesystems
+     * (no renameTo), then removes the source on success. Cancellable; on cancel
+     * the partial destination is removed but the source is preserved.
+     */
+    fun moveInto(
+        src: File,
+        destDir: File,
+        progress: (Progress) -> Unit = {},
+        cancelled: () -> Boolean = { false }
+    ): Result = runCatching {
         val target = File(destDir, src.name)
         if (src.absolutePath == target.absolutePath) {
             return Result.Error("Source and destination are the same")
@@ -51,7 +96,17 @@ object FileOps {
         // Never trust renameTo across the Ubuntu <-> Phone Storage boundary
         // (app-private exec mount vs FUSE /sdcard). Always stream-copy, then
         // remove the source so the move is atomic-ish and works both realms.
-        copyRecursive(src, target)
+        val total = totalBytes(src)
+        try {
+            copyRecursive(src, target, progress, cancelled, total, AtomicLong(0L))
+        } catch (_: CancelledException) {
+            target.deleteRecursively() // partial destination removed, source kept
+            return Result.Cancelled
+        }
+        if (cancelled()) {
+            target.deleteRecursively()
+            return Result.Cancelled
+        }
         src.deleteRecursively()
         Result.Ok
     }.getOrElse { Result.Error("Move failed: ${it.message ?: it::class.simpleName}") }
@@ -98,17 +153,37 @@ object FileOps {
         return c == p || c.startsWith("$p/")
     }
 
-    internal fun copyRecursive(src: File, target: File) {
+    /**
+     * Stream-copies [src] into [target], reporting cumulative [Progress] via
+     * [progress] and aborting by throwing [CancelledException] when [cancelled]
+     * returns true. [acc] tracks bytes copied so far across the whole tree.
+     */
+    internal fun copyRecursive(
+        src: File,
+        target: File,
+        progress: (Progress) -> Unit,
+        cancelled: () -> Boolean,
+        total: Long,
+        acc: AtomicLong
+    ) {
+        if (cancelled()) throw CancelledException()
         if (src.isDirectory) {
             if (!target.exists() && !target.mkdirs()) throw IllegalStateException("mkdir failed: ${target.name}")
             val children = src.listFiles()
                 ?: throw IllegalStateException("Cannot read directory: ${src.absolutePath} (permission denied?)")
-            children.forEach { copyRecursive(it, File(target, it.name)) }
+            children.forEach { copyRecursive(it, File(target, it.name), progress, cancelled, total, acc) }
         } else {
             target.parentFile?.let { if (!it.exists()) it.mkdirs() }
-            FileInputStream(src).use { inStream ->
-                FileOutputStream(target).use { outStream ->
-                    inStream.copyTo(outStream)
+            val buffer = ByteArray(8192)
+            FileInputStream(src).use { input ->
+                FileOutputStream(target).use { output ->
+                    var read: Int
+                    while (input.read(buffer).also { read = it } != -1) {
+                        if (cancelled()) throw CancelledException()
+                        output.write(buffer, 0, read)
+                        val done = acc.addAndGet(read.toLong())
+                        progress(Progress(done, total))
+                    }
                 }
             }
         }

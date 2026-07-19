@@ -26,6 +26,9 @@ import androidx.compose.material.icons.automirrored.filled.NoteAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -128,17 +131,45 @@ fun FileManagerScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    // Copy/move progress overlay state.
+    var opRunning by remember { mutableStateOf(false) }
+    var opProgress by remember { mutableFloatStateOf(0f) }
+    var opLabel by remember { mutableStateOf("") }
+    val opCancelled = remember { AtomicBoolean(false) }
+
     fun clearSelection() = selected.clear()
 
     fun doPaste() {
         val dest = current
-        val srcs = clipboard
-        for (s in srcs) {
-            val res = if (clipMode == ClipMode.CUT) FileOps.moveInto(s, dest) else FileOps.copyInto(s, dest)
-            if (res is FileOps.Result.Error) { toast(res.message); }
+        val srcs = clipboard.toList()
+        val cut = clipMode == ClipMode.CUT
+        opCancelled.set(false)
+        opLabel = if (cut) "Moving…" else "Copying…"
+        opProgress = 0f
+        opRunning = true
+        scope.launch(Dispatchers.IO) {
+            var lastError: String? = null
+            for (s in srcs) {
+                val total = FileOps.totalBytes(s)
+                val res = if (cut) {
+                    FileOps.moveInto(s, dest,
+                        progress = { p -> if (total > 0) opProgress = (p.done.toFloat() / total).coerceIn(0f, 1f) },
+                        cancelled = { opCancelled.get() })
+                } else {
+                    FileOps.copyInto(s, dest,
+                        progress = { p -> if (total > 0) opProgress = (p.done.toFloat() / total).coerceIn(0f, 1f) },
+                        cancelled = { opCancelled.get() })
+                }
+                if (res is FileOps.Result.Error) lastError = res.message
+                if (res is FileOps.Result.Cancelled) break
+            }
+            withContext(Dispatchers.Main) {
+                opRunning = false
+                if (cut) clipboard = emptyList()
+                refresh()
+                lastError?.let { toast(it) }
+            }
         }
-        if (clipMode == ClipMode.CUT) clipboard = emptyList()
-        refresh()
     }
 
     val fileToEdit = openFile
@@ -314,6 +345,29 @@ fun FileManagerScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+
+            if (opRunning) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(opLabel, style = MaterialTheme.typography.labelMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        LinearProgressIndicator(progress = { opProgress }, modifier = Modifier.fillMaxWidth())
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "${(opProgress * 100).toInt()}%",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { opCancelled.set(true) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) { Text("Cancel") }
                     }
                 }
             }
