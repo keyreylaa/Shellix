@@ -68,6 +68,36 @@ fun TerminalScreen(
     var renameText by remember { mutableStateOf("") }
 
     val view = LocalView.current
+
+    val onScreenshotClick: () -> Unit = {
+        val tv = terminalViewModel.terminalView ?: run {
+            toast("Terminal not ready")
+            return@let
+        }
+        val sessionName = sessionBinder
+            ?.getService()
+            ?.currentSession
+            ?.value
+            ?.first
+            ?.let { sessionBinder.getService().sessionList[it]?.name }
+        scope.launch(Dispatchers.IO) {
+            val title = TerminalScreenshot.title(context, sessionName)
+            val stamp = System.currentTimeMillis()
+            val displayName = "Shellix-${stamp}"
+            val bitmap = TerminalScreenshot.capture(tv, context, title)
+            if (bitmap == null) {
+                withContext(Dispatchers.Main) { toast("Nothing to capture") }
+                return@launch
+            }
+            val saved = TerminalScreenshot.saveToGallery(context, bitmap, displayName)
+            val share = TerminalScreenshot.shareIntent(context, bitmap, displayName)
+            withContext(Dispatchers.Main) {
+                if (saved != null) toast("Saved to Pictures/Shellix")
+                share?.let { context.startActivity(it) }
+            }
+        }
+    }
+
     DisposableEffect(view) {
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = false }
@@ -167,6 +197,7 @@ fun TerminalScreen(
                         sessionBinder = sessionBinder,
                         onMenuClick = { scope.launch { drawerState.open() } },
                         onAddClick = { showAddDialog = true },
+                        onScreenshotClick = onScreenshotClick,
                         onMicClick = {
                             VoiceInput.toggle(
                                 activity = mainActivity,

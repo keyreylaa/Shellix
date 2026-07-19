@@ -9,4 +9,8 @@
     <files-path
         name="fm_share"
         path="fm_share/" />
+    <!-- Staging dir for terminal screenshots shared via ACTION_SEND. -->
+    <files-path
+        name="fm_shots"
+        path="fm_shots/" />
 </paths>

@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Screenshot
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
@@ -17,6 +18,7 @@ fun TerminalTopBar(
     onMenuClick: () -> Unit,
     onAddClick: () -> Unit,
     onMicClick: () -> Unit,
+    onScreenshotClick: () -> Unit,
     micListening: Boolean = false,
     color: Color
 ) {
@@ -43,6 +45,9 @@ fun TerminalTopBar(
             }
         },
         actions = {
+            IconButton(onClick = onScreenshotClick) {
+                Icon(Icons.Default.Screenshot, "Screenshot", tint = color)
+            }
             IconButton(onClick = onAddClick) {
                 Icon(Icons.Default.Add, null, tint = color)
             }
