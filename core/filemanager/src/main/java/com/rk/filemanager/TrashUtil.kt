@@ -41,7 +41,7 @@ object TrashUtil {
         return try {
             if (!file.renameTo(entry)) {
                 // Cross-mount move can fail; fall back to stream copy + delete.
-                FileOps.copyRecursive(file, entry)
+                FileOps.copyRecursive(file, entry, {}, { false }, FileOps.totalBytes(file), java.util.concurrent.atomic.AtomicLong(0L))
                 file.deleteRecursively()
             }
             meta.writeText(file.absolutePath)
@@ -73,7 +73,7 @@ object TrashUtil {
                 true
             } else {
                 // Cross-mount restore: stream copy then remove the source.
-                runCatching { FileOps.copyRecursive(entry, dest) }.isSuccess.also {
+                runCatching { FileOps.copyRecursive(entry, dest, {}, { false }, FileOps.totalBytes(entry), java.util.concurrent.atomic.AtomicLong(0L)) }.isSuccess.also {
                     if (it) entry.deleteRecursively()
                 }
             }
