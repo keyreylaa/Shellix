@@ -496,11 +496,12 @@ void translate_execve_exit(Tracee *tracee)
 		talloc_set_name_const(tracee->exe, "$exe");
 	}
 
-	/* New processes have no heap; allocate a fresh one (fork-safe).
-	 * The child's talloc state is a CoW copy of the parent's and its
-	 * reference counts are stale — unlink it only after NULL-ing the
-	 * pointer so talloc_reference_count() doesn't read garbage.  */
-	TALLOC_FREE(tracee->heap);
+	/* New processes have no heap; allocate a fresh one.
+	 * After fork/CLONE_VM, other tracees may hold talloc references to
+	 * this heap via tracee.c's talloc_reference(child, parent->heap).
+	 * TALLOC_FREE/talloc_free would panic ("with references"), so use
+	 * talloc_unlink which drops only this tracee's own reference.  */
+	talloc_unlink(tracee, tracee->heap);
 	tracee->heap = talloc_zero(tracee, Heap);
 	if (tracee->heap == NULL)
 		note(tracee, ERROR, INTERNAL, "can't alloc heap after execve");
