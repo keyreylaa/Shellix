@@ -13,6 +13,11 @@ class VirtualKeysListener(
     private val keysView: VirtualKeysView? = null,
 ) : VirtualKeysView.IVirtualKeysView {
 
+    companion object {
+        private const val ESC = "\u001B"
+        private fun esc(suffix: String) = "$ESC$suffix"
+    }
+
     /** True when the SHIFT special button is currently active. */
     private val shiftActive: Boolean
         get() = keysView?.readSpecialButton(SpecialButton.SHIFT, false) == true
@@ -27,32 +32,32 @@ class VirtualKeysListener(
         // Shift+ combinations
         if (shiftActive) {
             when (key) {
-                "TAB"   -> { session.write("[Z"); return }
-                "HOME"  -> { session.write("[1;2H"); return }
-                "END"   -> { session.write("[1;2F"); return }
-                "UP"    -> { session.write("[1;2A"); return }
-                "DOWN"  -> { session.write("[1;2B"); return }
-                "LEFT"  -> { session.write("[1;2D"); return }
-                "RIGHT" -> { session.write("[1;2C"); return }
-                "PGUP"  -> { session.write("[5;2~"); return }
-                "PGDN"  -> { session.write("[6;2~"); return }
+                "TAB"   -> { session.write(esc("[Z")); return }
+                "HOME"  -> { session.write(esc("[1;2H")); return }
+                "END"   -> { session.write(esc("[1;2F")); return }
+                "UP"    -> { session.write(esc("[1;2A")); return }
+                "DOWN"  -> { session.write(esc("[1;2B")); return }
+                "LEFT"  -> { session.write(esc("[1;2D")); return }
+                "RIGHT" -> { session.write(esc("[1;2C")); return }
+                "PGUP"  -> { session.write(esc("[5;2~")); return }
+                "PGDN"  -> { session.write(esc("[6;2~")); return }
             }
         }
 
         // Regular key
         val writeable: String =
             when (key) {
-                "UP"    -> "[A"
-                "DOWN"  -> "[B"
-                "LEFT"  -> "[D"
-                "RIGHT" -> "[C"
-                "ENTER" -> ""
-                "PGUP"  -> "[5~"
-                "PGDN"  -> "[6~"
-                "TAB"   -> "	"
-                "HOME"  -> "[H"
-                "END"   -> "[F"
-                "ESC"   -> ""
+                "UP"    -> esc("[A")
+                "DOWN"  -> esc("[B")
+                "LEFT"  -> esc("[D")
+                "RIGHT" -> esc("[C")
+                "ENTER" -> esc("\r")
+                "PGUP"  -> esc("[5~")
+                "PGDN"  -> esc("[6~")
+                "TAB"   -> "\t"
+                "HOME"  -> esc("[H")
+                "END"   -> esc("[F")
+                "ESC"   -> ESC
                 else    -> key
             }
 
