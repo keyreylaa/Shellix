@@ -20,9 +20,10 @@ import com.rk.shellix.ui.activities.terminal.MainActivity
 import com.rk.shellix.ui.screens.terminal.MkSession
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
+import java.util.concurrent.ConcurrentHashMap
 
 class SessionService : Service() {
-    private val sessions = hashMapOf<String, TerminalSession>()
+    private val sessions = ConcurrentHashMap<String, TerminalSession>()
     val sessionList = mutableStateMapOf<String, SessionMeta>()
     var currentSession = mutableStateOf(Pair("main", com.rk.settings.Settings.working_Mode))
 

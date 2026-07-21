@@ -254,6 +254,7 @@ typedef struct tracee {
 	word_t pokedata_workaround_stub_addr;
 	bool pokedata_workaround_cancelled_syscall;
 	bool pokedata_workaround_relaunched_syscall;
+	int pokedata_workaround_retries;   /* max 3 before failing the syscall */
 #endif
 
 #ifdef ARCH_ARM64

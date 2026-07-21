@@ -69,6 +69,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Realme/ColorOS API 30: AutofillManager.requestHideFillUi blocks main thread
+        // on every touch event causing ANR. Terminal emulator doesn't need autofill.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            window?.decorView?.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+        }
         enableEdgeToEdge()
         requestPermission()
         applyKeepScreenOn()

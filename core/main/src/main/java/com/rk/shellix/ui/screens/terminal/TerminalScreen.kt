@@ -41,11 +41,13 @@ import com.rk.libcommons.toast
 import com.rk.shellix.ui.activities.terminal.MainActivity
 import com.rk.shellix.ui.activities.terminal.MainViewModel
 import com.rk.shellix.ui.screens.terminal.VoiceInput
+import com.termux.terminal.TerminalSession
 import com.rk.shellix.ui.components.SetStatusBarTextColor
 import com.rk.shellix.ui.screens.settings.SettingsCard
 import com.rk.shellix.ui.screens.settings.WorkingMode
 import com.rk.shellix.ui.screens.terminal.virtualkeys.VirtualKeysListener
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -77,6 +79,7 @@ fun TerminalScreen(
     val sessionBinder = mainViewModel.sessionBinder
 
     var showScreenshotChoice by remember { mutableStateOf(false) }
+    var screenshotLoading by remember { mutableStateOf(false) }
 
     val onScreenshotClick: () -> Unit = clickHandler@ {
         val tv = terminalViewModel.terminalView
@@ -92,6 +95,7 @@ fun TerminalScreen(
             toast("Terminal not ready")
             return
         }
+        screenshotLoading = true
         scope.launch(Dispatchers.IO) {
             val title = TerminalScreenshot.title(context)
             val stamp = System.currentTimeMillis()
@@ -99,14 +103,21 @@ fun TerminalScreen(
             val displayName = "Shellix-$stamp$tag"
             val bitmap = TerminalScreenshot.capture(tv, context, title, mode)
             if (bitmap == null) {
-                withContext(Dispatchers.Main) { toast("Nothing to capture") }
+                withContext(Dispatchers.Main) {
+                    screenshotLoading = false
+                    toast("Nothing to capture")
+                }
                 return@launch
             }
             val saved = TerminalScreenshot.saveToGallery(context, bitmap, displayName)
-            val share = TerminalScreenshot.shareIntent(context, bitmap, displayName)
             withContext(Dispatchers.Main) {
-                if (saved != null) toast("Saved to Pictures/Shellix")
-                share?.let { context.startActivity(it) }
+                screenshotLoading = false
+                if (saved != null) {
+                    toast("Saved to Pictures/Shellix")
+                    TerminalScreenshot.shareIntent(context, saved)?.let { context.startActivity(it) }
+                } else {
+                    toast("Failed to save screenshot")
+                }
             }
         }
     }
@@ -133,11 +144,21 @@ fun TerminalScreen(
         }
     }
     
-    // Update virtual keys when they are available
+    // Update virtual keys only when session reference or color actually changes
+    var rememberedSession by remember { mutableStateOf<TerminalSession?>(null) }
+    var rememberedColor by remember { mutableStateOf(0) }
     SideEffect {
-        terminalViewModel.virtualKeysView?.apply {
-            virtualKeysViewClient = terminalViewModel.terminalView?.mTermSession?.let { VirtualKeysListener(it) }
-            buttonTextColor = TerminalUtils.getViewColor()
+        terminalViewModel.virtualKeysView?.let { vk ->
+            val currentSession = terminalViewModel.terminalView?.mTermSession
+            val currentColor = TerminalUtils.getViewColor()
+            if (currentSession !== rememberedSession) {
+                vk.virtualKeysViewClient = currentSession?.let { VirtualKeysListener(it, vk) }
+                rememberedSession = currentSession
+            }
+            if (currentColor != rememberedColor) {
+                vk.buttonTextColor = currentColor
+                rememberedColor = currentColor
+            }
         }
     }
 
@@ -145,7 +166,8 @@ fun TerminalScreen(
         scope.launch { drawerState.close() }
     }
 
-    val isDarkIcons = if (drawerState.isClosed) TerminalUtils.darkText.value else !isDarkMode
+    val isClosed by remember { snapshotFlow { drawerState.isClosed }.distinctUntilChanged() }.collectAsState(initial = drawerState.isClosed)
+    val isDarkIcons = if (isClosed) TerminalUtils.darkText.value else !isDarkMode
     SetStatusBarTextColor(isDarkIcons = isDarkIcons)
 
     if (showAddDialog && sessionBinder != null) {
@@ -206,6 +228,21 @@ fun TerminalScreen(
             // paints in declaration order). No zIndex(-1f): on API <31 a negative zIndex
             // can get clipped and the image disappears entirely.
             key(terminalViewModel.bitmapFile) { BackgroundImage(terminalViewModel) }
+
+            if (screenshotLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .zIndex(10f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Capturing screenshot...",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
 
             Column {
                 if (terminalViewModel.showToolbar) {

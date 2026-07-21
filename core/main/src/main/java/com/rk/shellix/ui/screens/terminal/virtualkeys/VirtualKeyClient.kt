@@ -5,28 +5,54 @@ import android.widget.Button
 import com.rk.shellix.ui.screens.terminal.virtualkeys.VirtualKeysView.IVirtualKeysView
 import com.termux.terminal.TerminalSession
 
-class VirtualKeyClient(val session: TerminalSession) : IVirtualKeysView {
+class VirtualKeyClient(
+    val session: TerminalSession,
+    private val keysView: VirtualKeysView? = null,
+) : IVirtualKeysView {
+
+    companion object {
+        private const val ESC = "\u001B"
+        private fun esc(suffix: String) = "$ESC$suffix"
+    }
+
+    private val shiftActive: Boolean
+        get() = keysView?.readSpecialButton(SpecialButton.SHIFT, false) == true
+
     override fun onVirtualKeyButtonClick(
         view: View?,
         buttonInfo: VirtualKeyButton?,
         button: Button?,
     ) {
-        val key = buttonInfo?.key
-        if (key.isNullOrEmpty()) {
-            return
+        val key = buttonInfo?.key ?: run { return }
+        if (key.isEmpty()) return
+
+        // Shift+ combinations
+        if (shiftActive) {
+            when (key) {
+                "TAB" -> { session.write(esc("[Z")); return }
+                "HOME" -> { session.write(esc("[1;2H")); return }
+                "END" -> { session.write(esc("[1;2F")); return }
+                "UP" -> { session.write(esc("[1;2A")); return }
+                "DOWN" -> { session.write(esc("[1;2B")); return }
+                "LEFT" -> { session.write(esc("[1;2D")); return }
+                "RIGHT" -> { session.write(esc("[1;2C")); return }
+                "PGUP" -> { session.write(esc("[5;2~")); return }
+                "PGDN" -> { session.write(esc("[6;2~")); return }
+            }
         }
+
         when (key) {
-            "ESC" -> session.write("\u001B") // ESC
-            "TAB" -> session.write("\u0009") // TAB
-            "HOME" -> session.write("\u001B[H") // HOME
-            "UP" -> session.write("\u001B[A") // UP Arrow (ANSI escape code)
-            "DOWN" -> session.write("\u001B[B") // DOWN Arrow (ANSI escape code)
-            "LEFT" -> session.write("\u001B[D") // LEFT Arrow (ANSI escape code)
-            "RIGHT" -> session.write("\u001B[C") // RIGHT Arrow (ANSI escape code)
-            "PGUP" -> session.write("\u001B[5~") // Page Up (ANSI escape code)
-            "PGDN" -> session.write("\u001B[6~") // Page Down (ANSI escape code)
-            "END" -> session.write("\u001B[4~") // End (ANSI escape code, may vary)
-            else -> session.write(buttonInfo.key)
+            "ESC" -> session.write(ESC)
+            "TAB" -> session.write("\t")
+            "HOME" -> session.write(esc("[H"))
+            "UP" -> session.write(esc("[A"))
+            "DOWN" -> session.write(esc("[B"))
+            "LEFT" -> session.write(esc("[D"))
+            "RIGHT" -> session.write(esc("[C"))
+            "PGUP" -> session.write(esc("[5~"))
+            "PGDN" -> session.write(esc("[6~"))
+            "END" -> session.write(esc("[F"))
+            else -> session.write(key)
         }
     }
 
@@ -34,7 +60,5 @@ class VirtualKeyClient(val session: TerminalSession) : IVirtualKeysView {
         view: View?,
         buttonInfo: VirtualKeyButton?,
         button: Button?,
-    ): Boolean {
-        return false
-    }
+    ): Boolean = false
 }

@@ -27,7 +27,10 @@ class TerminalViewModel : ViewModel() {
     companion object {
         // Set by MainViewModel when the SessionService binds, so settings screens
         // can live-apply changes (e.g. color schemes) to every running session.
-        var currentBinder: SessionService.SessionBinder? = null
+        private var _currentBinder = java.lang.ref.WeakReference<SessionService.SessionBinder>(null)
+        var currentBinder: SessionService.SessionBinder?
+            get() = _currentBinder.get()
+            set(value) { _currentBinder = java.lang.ref.WeakReference(value) }
     }
     private var terminalViewRef = WeakReference<TerminalView>(null)
     private var virtualKeysViewRef = WeakReference<VirtualKeysView>(null)
@@ -88,7 +91,7 @@ class TerminalViewModel : ViewModel() {
         }
         
         virtualKeysView?.apply {
-            virtualKeysViewClient = terminal.mTermSession?.let { VirtualKeysListener(it) }
+            virtualKeysViewClient = terminal.mTermSession?.let { VirtualKeysListener(it, this) }
         }
         
         sessionBinder.getService().activeSessionId = sessionId

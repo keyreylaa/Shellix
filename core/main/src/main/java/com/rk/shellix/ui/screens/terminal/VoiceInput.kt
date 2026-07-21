@@ -43,6 +43,12 @@ object VoiceInput {
             return
         }
 
+        /* Destroy any existing recognizer from a previous toggle cycle that
+         * may not have fired its onResults/onError callback yet (e.g., after
+         * stop() was called but the callback was deferred). */
+        recognizer?.destroy()
+        recognizer = null
+
         if (!SpeechRecognizer.isRecognitionAvailable(activity)) {
             onError("Voice input unavailable")
             return

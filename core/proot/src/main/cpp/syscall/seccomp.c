@@ -510,15 +510,20 @@ int enable_syscall_filtering(const Tracee *tracee)
 
 			status = merge_filtered_sysnums(tracee->ctx, &filtered_sysnums,
 							extension->filtered_sysnums);
-			if (status < 0)
+			if (status < 0) {
+				TALLOC_FREE(filtered_sysnums);
 				return status;
+			}
 		}
 	}
 
 	status = set_seccomp_filters(filtered_sysnums);
-	if (status < 0)
+	if (status < 0) {
+		TALLOC_FREE(filtered_sysnums);
 		return status;
+	}
 
+	TALLOC_FREE(filtered_sysnums);
 	return 0;
 }
 

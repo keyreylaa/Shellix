@@ -1,0 +1,11 @@
+{
+    "schema_version": 2,
+    "commit": "93c6dc584389f2195345942731eeceb13e69fffc",
+    "indexed_at": "2026-07-21T23:18:52Z",
+    "project": "home-shellix-Shellix",
+    "nodes": 4418,
+    "edges": 12407,
+    "original_size": 13238272,
+    "compressed_size": 2921544,
+    "compression_level": 3
+}

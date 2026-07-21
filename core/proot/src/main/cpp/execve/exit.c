@@ -452,7 +452,10 @@ void translate_execve_exit(Tracee *tracee)
 		/* This is is required to make GDB work correctly
 		 * under PRoot, however it deserves to be used
 		 * unconditionally.  */
-		(void) bind_proc_pid_auxv(tracee);
+		if (bind_proc_pid_auxv(tracee) < 0)
+			note(tracee, WARNING, INTERNAL,
+				"can't bind /proc/%d/auxv — AT_EXECFN may be wrong",
+				tracee->pid);
 
 		/* If the PTRACE_O_TRACEEXEC option is *not* in effect
 		 * for the execing tracee, the kernel delivers an
@@ -493,14 +496,30 @@ void translate_execve_exit(Tracee *tracee)
 		talloc_set_name_const(tracee->exe, "$exe");
 	}
 
-	/* New processes have no heap.  */
-	if (talloc_reference_count(tracee->heap) >= 1) {
-		talloc_unlink(tracee, tracee->heap);
-		tracee->heap = talloc_zero(tracee, Heap);
-		if (tracee->heap == NULL)
-			note(tracee, ERROR, INTERNAL, "can't alloc heap after execve");
-	} else {
-		bzero(tracee->heap, sizeof(Heap));
+	/* New processes have no heap; allocate a fresh one.
+	 * After fork/CLONE_VM, other tracees may hold talloc references to
+	 * this heap via tracee.c's talloc_reference(child, parent->heap).
+	 * TALLOC_FREE/talloc_free would panic ("with references"), so use
+	 * talloc_unlink which drops only this tracee's own reference.  */
+	talloc_unlink(tracee, tracee->heap);
+	tracee->heap = talloc_zero(tracee, Heap);
+	if (tracee->heap == NULL)
+		note(tracee, ERROR, INTERNAL, "can't alloc heap after execve");
+
+	/* Pre-check: verify the stack pointer is in the userspace range before
+	 * transferring the load script — execve has already replaced the process
+	 * image, so a failure here would be unrecoverable (the tracee would have
+	 * no code to execute).  Peek at the stack pointer and reject clearly
+	 * invalid values before attempting the write.  */
+	{
+		word_t sp = peek_reg(tracee, CURRENT, STACK_POINTER);
+		if (sp == 0 || sp < 0x10000) {
+			note(tracee, ERROR, INTERNAL,
+				"invalid stack pointer 0x%lx after execve, killing tracee",
+				(unsigned long) sp);
+			kill(tracee->pid, SIGKILL);
+			return;
+		}
 	}
 
 	/* Transfer the load script to the loader.  */

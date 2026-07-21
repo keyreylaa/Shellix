@@ -128,11 +128,24 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg, Reg link_target_sys
 	}
 
 	if (first_link) {
-		/*Move the original content to the new path. */
+		int claimed = 0;
+		/* Move the original content to the new path.
+		 * Use O_CREAT|O_EXCL to atomically claim the name (fixes TOCTOU race). */
 		do {
+			int fd;
 			sprintf(new_intermediate, "%s%04d", intermediate, intermediate_suffix);
 			intermediate_suffix++;
-		} while ((access(new_intermediate,F_OK) != -1) && (intermediate_suffix < 1000));
+			fd = open(new_intermediate, O_CREAT | O_EXCL, 0600);
+			if (fd >= 0) {
+				close(fd);
+				unlink(new_intermediate);
+				claimed = 1;
+				break;
+			}
+		} while (errno == EEXIST && intermediate_suffix < 1000);
+		if (!claimed)
+			return -EMLINK;
+
 		strcpy(intermediate, new_intermediate);
 
 		strcpy(final, intermediate);
@@ -181,6 +194,10 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg, Reg link_target_sys
 			return status;
 	}
 
+	/* Save final path before read_path may overwrite it, for rollback. */
+	char saved_final[PATH_MAX];
+	strcpy(saved_final, final);
+
 	/* Perform symlink() operation within PRoot.  */
 	status = read_path(tracee, final, peek_reg(tracee, CURRENT, link_target_sysarg));
 	if (status >= 0) {
@@ -188,8 +205,16 @@ static int move_and_symlink_path(Tracee *tracee, Reg sysarg, Reg link_target_sys
 		if (status < 0) status = -errno;
 	}
 	if (status < 0) {
+		/* Rollback: undo the rename and symlinks, restoring the original file. */
+		(void) unlink(original);
+		if (first_link) {
+			(void) unlink(intermediate);
+			(void) rename(saved_final, original);
+		} else {
+			(void) unlink(intermediate);
+			(void) rename(final, saved_final);
+		}
 		status = -errno;
-		decrement_link_count(tracee, sysarg);
 		return status;
 	}
 	poke_reg(tracee, SYSARG_RESULT, 0);
@@ -689,7 +714,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = decrement_link_count(tracee, SYSARG_2);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -701,7 +726,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = decrement_link_count(tracee, SYSARG_4);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -714,7 +739,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = decrement_link_count(tracee, SYSARG_1);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -734,7 +759,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = decrement_link_count(tracee, SYSARG_2);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -750,7 +775,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = move_and_symlink_path(tracee, SYSARG_1, SYSARG_2);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -761,7 +786,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 			if (peek_reg(tracee, CURRENT, SYSARG_5) & AT_SYMLINK_FOLLOW) {
 				status = handle_linkat_from_proc_fd(tracee);
-				if (status < 0)
+				if (status < 0 && errno != ENOENT)
 					return status;
 				if (status == 1) {
 					set_sysnum(tracee, PR_void);
@@ -787,7 +812,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = move_and_symlink_path(tracee, SYSARG_2, SYSARG_4);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;

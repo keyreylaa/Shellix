@@ -60,6 +60,16 @@ void translate_syscall_exit(Tracee *tracee)
 	word_t syscall_result;
 	int status;
 
+	/* Clear any stale sysexit_pending flag that might have been set
+	 * during sysenter but left uncleared on an error path.  The flag
+	 * controls whether the next event is restarted with PTRACE_SYSCALL
+	 * vs PTRACE_CONT and a leak would prevent the PTRACE_CONT fast
+	 * path from ever being selected again, slowing every subsequent
+	 * syscall to the PTRACE_SYSCALL rate.  Each sysexit handler that
+	 * needs to keep the flag across sysexit (PR_read, PR_open/openat)
+	 * re-sets it explicitly. */
+	tracee->sysexit_pending = false;
+
 	status = notify_extensions(tracee, SYSCALL_EXIT_START, 0, 0);
 	if (status < 0) {
 		poke_reg(tracee, SYSARG_RESULT, (word_t) status);
