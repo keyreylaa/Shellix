@@ -23,6 +23,11 @@ Compact guidance for agents working in the **Shellix** repo (Android/Kotlin, a r
 - App screen packages live under `core/main/.../ui/screens/{terminal,settings,customization,downloader,packages,about}`.
 - Navigation: routes in `ui/routes/MainActivityRoutes.kt`, wired in `ui/navHosts/MainActivityNavHost.kt`, drawer items in `ui/screens/terminal/TerminalDrawer.kt`, top-bar actions in `TerminalTopBar.kt`.
 
+## Bypass System — Wrapper Installer Universal
+- **`shellix-prepend-path.sh`** (assets/): auto-source dari `init.sh` tiap login. Nambah PATH tools (`~/.bun/bin`, `~/.cargo/bin`, `~/.npm-global/bin`, `~/go/bin`, `/usr/local/bin`, dll) + sanitizer `LD_PRELOAD` untuk glibc binary biar gak crash kena `libtermux-exec-ld-preload.so` Bionic.
+- **`init.sh`** udah include `. shellix-prepend-path.sh` sebelum user switch.
+- Kate mau nambah tool path? Edit `SHELLIX_PATH_ENTRIES` di `shellix-prepend-path.sh`.
+
 ## Hard-won facts (do not repeat these mistakes)
 - **Namespace mismatch**: Kotlin `R`/`BuildConfig` are generated from the gradle `namespace` (`com.rk.shellix`), NOT from `applicationId`. If you rename packages, keep the gradle `namespace` equal to the source package, or you get `Unresolved reference 'R'`.
 - **Do not run `tar` as an external binary on Android.** `extractTar()` in `SetupScreen.kt` must use the pure-Kotlin `commons-compress` reader (added dep `org.apache.commons:commons-compress:1.26.0`). External `tar` is unreliable/absent on Android hosts and was the cause of "Failed to extract ubuntu.tar.gz".

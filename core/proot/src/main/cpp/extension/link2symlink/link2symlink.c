@@ -714,7 +714,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = decrement_link_count(tracee, SYSARG_2);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -726,7 +726,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = decrement_link_count(tracee, SYSARG_4);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -739,7 +739,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = decrement_link_count(tracee, SYSARG_1);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -759,7 +759,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = decrement_link_count(tracee, SYSARG_2);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -775,7 +775,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = move_and_symlink_path(tracee, SYSARG_1, SYSARG_2);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;
@@ -786,7 +786,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 			if (peek_reg(tracee, CURRENT, SYSARG_5) & AT_SYMLINK_FOLLOW) {
 				status = handle_linkat_from_proc_fd(tracee);
-				if (status < 0)
+				if (status < 0 && errno != ENOENT)
 					return status;
 				if (status == 1) {
 					set_sysnum(tracee, PR_void);
@@ -812,7 +812,7 @@ int link2symlink_callback(Extension *extension, ExtensionEvent event,
 			 */
 
 			status = move_and_symlink_path(tracee, SYSARG_2, SYSARG_4);
-			if (status < 0)
+			if (status < 0 && errno != ENOENT)
 				return status;
 
 			break;

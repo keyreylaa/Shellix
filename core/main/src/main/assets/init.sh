@@ -1,5 +1,13 @@
 set -e  # Exit immediately on Failure
 
+# Shellix Bypass System — source wrapper prepend-path + seccomp sanitizer
+# (available from $BIN/setup-user.sh deployment; fallback to local/bin)
+if [ -f "$BIN/shellix-prepend-path.sh" ]; then
+    . "$BIN/shellix-prepend-path.sh"
+elif [ -f "$PREFIX/local/bin/shellix-prepend-path.sh" ]; then
+    . "$PREFIX/local/bin/shellix-prepend-path.sh"
+fi
+
 if [ -f /etc/shellix_default_user ]; then
   DEFAULT_USER=$(cat /etc/shellix_default_user)
   if id "$DEFAULT_USER" >/dev/null 2>&1; then exec su - "$DEFAULT_USER"; fi
