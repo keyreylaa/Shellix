@@ -166,7 +166,7 @@ fun TerminalScreen(
         scope.launch { drawerState.close() }
     }
 
-    val isClosed by snapshotFlow { drawerState.isClosed }.distinctUntilChanged().collectAsState(initial = drawerState.isClosed)
+    val isClosed by remember { snapshotFlow { drawerState.isClosed }.distinctUntilChanged() }.collectAsState(initial = drawerState.isClosed)
     val isDarkIcons = if (isClosed) TerminalUtils.darkText.value else !isDarkMode
     SetStatusBarTextColor(isDarkIcons = isDarkIcons)
 
