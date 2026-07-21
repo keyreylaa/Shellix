@@ -27,7 +27,7 @@ class TerminalViewModel : ViewModel() {
     companion object {
         // Set by MainViewModel when the SessionService binds, so settings screens
         // can live-apply changes (e.g. color schemes) to every running session.
-        private val _currentBinder = java.lang.ref.WeakReference<SessionService.SessionBinder>(null)
+        private var _currentBinder = java.lang.ref.WeakReference<SessionService.SessionBinder>(null)
         var currentBinder: SessionService.SessionBinder?
             get() = _currentBinder.get()
             set(value) { _currentBinder = java.lang.ref.WeakReference(value) }

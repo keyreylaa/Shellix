@@ -95,7 +95,7 @@ fun TerminalDrawer(
             }
             LazyColumn {
                 items(sessions, key = { it.first }) { (sessionId, meta) ->
-                    val isSelected = sessionId == sessionBinder.getService().currentSession.value.first
+                    val isSelected = sessionId == sessionBinder?.getService()?.currentSession?.value?.first
                     SelectableCard(
                         selected = isSelected,
                         onSelect = { onSessionSelected(sessionId) },
@@ -111,7 +111,7 @@ fun TerminalDrawer(
                                 IconButton(
                                     onClick = {
                                         if (twoStep) confirmTerminateId = sessionId
-                                        else sessionBinder.terminateSession(sessionId)
+                                        else sessionBinder?.terminateSession(sessionId)
                                     },
                                     modifier = Modifier.size(24.dp)
                                 ) {
