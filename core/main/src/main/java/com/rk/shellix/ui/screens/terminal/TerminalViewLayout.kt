@@ -34,14 +34,16 @@ fun TerminalViewLayout(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
+        var clientRef by remember { mutableStateOf<TerminalBackEnd?>(null) }
         AndroidView(
             factory = { ctx ->
                 TerminalView(ctx, null).apply {
                     viewModel.setTerminalView(this)
                     setTextSize(dpToPx(Settings.terminal_font_size.toFloat(), ctx))
                     setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                    
+
                     val client = TerminalBackEnd(this, mainActivity)
+                    clientRef = client
                     val service = sessionBinder.getService()
                     
                     val session = sessionBinder.getSession(service.currentSession.value.first)
@@ -80,7 +82,10 @@ fun TerminalViewLayout(
             },
             modifier = Modifier.fillMaxWidth().weight(1f),
             update = { view ->
-                view.onScreenUpdated()
+                if (clientRef?.needsUpdate == true) {
+                    view.onScreenUpdated()
+                    clientRef?.needsUpdate = false
+                }
                 val color = TerminalUtils.getViewColor()
                 val bgColor = TerminalUtils.getBackgroundColor()
                 view.mEmulator?.mColors?.mCurrentColors?.apply {
@@ -112,8 +117,9 @@ private fun VirtualKeysPager(viewModel: TerminalViewModel) {
                     factory = { ctx ->
                         VirtualKeysView(ctx, null).apply {
                             viewModel.setVirtualKeysView(this)
+                            val vv = this
                             virtualKeysViewClient = viewModel.terminalView?.mTermSession?.let {
-                                VirtualKeysListener(it)
+                                VirtualKeysListener(it, vv)
                             }
                             buttonTextColor = onSurfaceColor
                             reload(VirtualKeysInfo(VIRTUAL_KEYS, "", VirtualKeysConstants.CONTROL_CHARS_ALIASES))

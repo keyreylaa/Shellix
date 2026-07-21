@@ -505,8 +505,21 @@ int detranslate_path(Tracee *tracee, char path[PATH_MAX], const char t_referrer[
 
 	default:
 		/* Ensure the path is within the new root.  */
-		if (sanity_check)
+		if (sanity_check) {
+			/* Try to resolve via a binding before giving up:
+			 * the path might be an absolute symlink target
+			 * that falls under a host-path binding (e.g.
+			 * /data/data/.../files/usr/bin -> /usr/bin).  */
+			switch (substitute_binding(tracee, HOST, path)) {
+			case 0:
+				return 0;
+			case 1:
+				return strlen(path) + 1;
+			default:
+				break;
+			}
 			return -EPERM;
+		}
 		else
 			return 0;
 	}

@@ -96,7 +96,7 @@ object TerminalScreenshot {
         val desktopWidthPx = 1440f
         val fontPx = if (mode == Mode.DESKTOP) {
             // monospace cell width ~= 0.6 * font size -> font = (width/cols) / 0.6
-            (desktopWidthPx / cols) / 0.6f
+            ((desktopWidthPx / cols) / 0.6f).coerceAtMost(120f)
         } else {
             dpToPx(Settings.terminal_font_size.toFloat(), context).toFloat()
         }
@@ -237,7 +237,7 @@ object TerminalScreenshot {
 
         val p = Paint(base).apply {
             color = fg
-            if (bold) isFakeBoldText = true
+            if (bold) typeface = Typeface.create(base.typeface, Typeface.BOLD)
             if ((effect and 0x2) != 0) textSkewX = -0.25f
             if ((effect and 0x4) != 0) isUnderlineText = true
             if ((effect and 0x40) != 0) isStrikeThruText = true
@@ -305,16 +305,10 @@ object TerminalScreenshot {
         }.getOrNull()
     }
 
-    /** Stage [bitmap] and return a shareable ACTION_SEND chooser intent, or null. */
-    fun shareIntent(context: Context, bitmap: Bitmap, displayName: String): Intent? {
-        val staged = runCatching {
-            val dir = File(context.filesDir, SHOTS_DIR).also { it.mkdirs() }
-            val file = File(dir, "$displayName.png")
-            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            file
-        }.getOrNull() ?: return null
+    /** Return a shareable ACTION_SEND chooser intent for the already-saved [file]. */
+    fun shareIntent(context: Context, file: File): Intent? {
         val uri = FileProvider.getUriForFile(
-            context, context.packageName + AUTHORITY_SUFFIX, staged
+            context, context.packageName + AUTHORITY_SUFFIX, file
         )
         return Intent.createChooser(
             Intent(Intent.ACTION_SEND).apply {

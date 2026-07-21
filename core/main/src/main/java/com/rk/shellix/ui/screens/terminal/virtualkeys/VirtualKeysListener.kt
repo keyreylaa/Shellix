@@ -4,29 +4,56 @@ import android.view.View
 import android.widget.Button
 import com.termux.terminal.TerminalSession
 
-class VirtualKeysListener(val session: TerminalSession) : VirtualKeysView.IVirtualKeysView {
+/**
+ * Handles virtual key clicks. When SHIFT is toggled/held, arrow/home/end keys are
+ * sent as shifted sequences (e.g. Shift+Tab = ESC[Z) instead of bare control chars.
+ */
+class VirtualKeysListener(
+    val session: TerminalSession,
+    private val keysView: VirtualKeysView? = null,
+) : VirtualKeysView.IVirtualKeysView {
+
+    /** True when the SHIFT special button is currently active. */
+    private val shiftActive: Boolean
+        get() = keysView?.readSpecialButton(SpecialButton.SHIFT, false) == true
 
     override fun onVirtualKeyButtonClick(
         view: View?,
         buttonInfo: VirtualKeyButton?,
         button: Button?,
     ) {
-
         val key = buttonInfo?.key ?: return
+
+        // Shift+ combinations
+        if (shiftActive) {
+            when (key) {
+                "TAB"   -> { session.write("[Z"); return }
+                "HOME"  -> { session.write("[1;2H"); return }
+                "END"   -> { session.write("[1;2F"); return }
+                "UP"    -> { session.write("[1;2A"); return }
+                "DOWN"  -> { session.write("[1;2B"); return }
+                "LEFT"  -> { session.write("[1;2D"); return }
+                "RIGHT" -> { session.write("[1;2C"); return }
+                "PGUP"  -> { session.write("[5;2~"); return }
+                "PGDN"  -> { session.write("[6;2~"); return }
+            }
+        }
+
+        // Regular key
         val writeable: String =
             when (key) {
-                "UP" -> "\u001B[A" // Escape sequence for Up Arrow
-                "DOWN" -> "\u001B[B" // Escape sequence for Down Arrow
-                "LEFT" -> "\u001B[D" // Escape sequence for Left Arrow
-                "RIGHT" -> "\u001B[C" // Escape sequence for Right Arrow
-                "ENTER" -> "\u000D" // Carriage Return for Enter
-                "PGUP" -> "\u001B[5~" // Escape sequence for Page Up
-                "PGDN" -> "\u001B[6~" // Escape sequence for Page Down
-                "TAB" -> "\u0009" // Horizontal Tab
-                "HOME" -> "\u001B[H" // Escape sequence for Home
-                "END" -> "\u001B[F" // Escape sequence for End
-                "ESC" -> "\u001B" // Escape
-                else -> key
+                "UP"    -> "[A"
+                "DOWN"  -> "[B"
+                "LEFT"  -> "[D"
+                "RIGHT" -> "[C"
+                "ENTER" -> ""
+                "PGUP"  -> "[5~"
+                "PGDN"  -> "[6~"
+                "TAB"   -> "	"
+                "HOME"  -> "[H"
+                "END"   -> "[F"
+                "ESC"   -> ""
+                else    -> key
             }
 
         session.write(writeable)
@@ -36,7 +63,5 @@ class VirtualKeysListener(val session: TerminalSession) : VirtualKeysView.IVirtu
         view: View?,
         buttonInfo: VirtualKeyButton?,
         button: Button?,
-    ): Boolean {
-        return false
-    }
+    ): Boolean = false
 }

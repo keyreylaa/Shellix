@@ -623,10 +623,12 @@ int translate_execve_enter(Tracee *tracee)
 		return -ENOMEM;
 
 	status = expand_shebang(tracee, host_path, user_path);
-	if (status < 0)
+	if (status < 0) {
 		/* The Linux kernel actually returns -EACCES when
 		 * trying to execute a directory.  */
+		TALLOC_FREE(raw_path);
 		return status == -EISDIR ? -EACCES : status;
+	}
 
 	/* user_path is modified only if there's an interpreter
 	 * (ie. for a script or with qemu).  */
@@ -651,8 +653,10 @@ int translate_execve_enter(Tracee *tracee)
 	tracee->skip_proot_loader = false;
 	if (tracee->qemu != NULL) {
 		status = expand_runner(tracee, host_path, user_path);
-		if (status < 0)
+		if (status < 0) {
+			TALLOC_FREE(raw_path);
 			return status;
+		}
 	}
 
 	talloc_unlink(tracee, tracee->load_info);
@@ -662,9 +666,12 @@ int translate_execve_enter(Tracee *tracee)
 		tracee->heap->disabled = true;
 
 		status = set_sysarg_path(tracee, host_path, SYSARG_1);
-		if (status < 0)
+		if (status < 0) {
+			TALLOC_FREE(raw_path);
 			return status;
+		}
 
+		TALLOC_FREE(raw_path);
 		return 0;
 	}
 

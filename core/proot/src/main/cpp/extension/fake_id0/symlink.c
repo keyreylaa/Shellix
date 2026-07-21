@@ -21,10 +21,8 @@ int handle_symlink_enter_end(Tracee *tracee, Reg oldpath_sysarg,
 		return status;
 
 	status = read_sysarg_path(tracee, newpath, newpath_sysarg, CURRENT);
-	if(status < 0) 
+	if(status < 0)
 		return status;
-	if(status == 1) 
-		return 0;
 
 	status = get_fd_path(tracee, rel_newpath, newdirfd_sysarg, CURRENT);
 	if(status < 0)

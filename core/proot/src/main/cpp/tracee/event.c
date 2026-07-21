@@ -310,6 +310,15 @@ int event_loop()
 			signal_action.sa_sigaction = kill_all_tracees2;
 			break;
 
+		case SIGTERM:
+		case SIGINT:
+			/* Forward SIGTERM/SIGINT to all tracees for
+			 * graceful shutdown, then exit.  Previously
+			 * these were ignored, so `kill <pid>` and ^C
+			 * were silently swallowed.  */
+			signal_action.sa_sigaction = kill_all_tracees2;
+			break;
+
 		case SIGUSR1:
 		case SIGUSR2:
 			/* Print on stderr the complete talloc

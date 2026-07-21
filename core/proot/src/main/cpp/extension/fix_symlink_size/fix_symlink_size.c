@@ -32,6 +32,60 @@ static int handle_sysexit_end(Tracee *tracee)
 
     switch (sysnum) {
 
+    case PR_fstatat64:                  //int fstatat(int dirfd, const char *pathname, struct stat *buf, int flags);
+    case PR_newfstatat: {               //int fstatat(int dirfd, const char *pathname, struct stat *buf, int flags);
+        word_t result;
+        Reg sysarg_stat;
+        Reg sysarg_path;
+        int status;
+        struct stat statl;
+        ssize_t size;
+        char original[PATH_MAX];
+        char intermediate[PATH_MAX];
+        int flags;
+
+        /* Override only if it succeed.  */
+        result = peek_reg(tracee, CURRENT, SYSARG_RESULT);
+        if (result != 0)
+            return 0;
+
+        /* Only override when AT_SYMLINK_NOFOLLOW is set (equivalent to lstat).  */
+        flags = peek_reg(tracee, MODIFIED, SYSARG_4);
+        if (!(flags & AT_SYMLINK_NOFOLLOW))
+            return 0;
+
+        /* fstatat: path at SYSARG_2, stat at SYSARG_3.  */
+        sysarg_path = SYSARG_2;
+        sysarg_stat = SYSARG_3;
+        size = read_string(tracee, original, peek_reg(tracee, MODIFIED, sysarg_path), PATH_MAX);
+        if (size < 0)
+            return size;
+        if (size >= PATH_MAX)
+            return -ENAMETOOLONG;
+
+        /* Check if it is a link */
+        status = lstat(original, &statl);
+        if (status < 0)  //shouldn't happen
+           return status;
+
+        /* If it is not a link, get out */
+        if (!S_ISLNK(statl.st_mode))
+           return 0;
+
+        size = readlink(original, intermediate, PATH_MAX);
+        if (size < 0)
+            return size;
+
+        /* Overwrite the stat struct with the correct size. */
+        read_data(tracee, &statl, peek_reg(tracee, ORIGINAL, sysarg_stat), sizeof(statl));
+        statl.st_size = (off_t)size;
+        status = write_data(tracee, peek_reg(tracee, ORIGINAL, sysarg_stat), &statl, sizeof(statl));
+        if (status < 0)
+            return status;
+
+        return 0;
+    }
+
     case PR_lstat64:                   //int lstat(const char *path, struct stat *buf);
     case PR_lstat: {                     //int lstat(const char *path, struct stat *buf);
         word_t result;
@@ -101,8 +155,10 @@ int fix_symlink_size_callback(Extension *extension, ExtensionEvent event,
     case INITIALIZATION: {
         /* List of syscalls handled by this extensions.  */
         static FilteredSysnum filtered_sysnums[] = {
-            { PR_lstat,     FILTER_SYSEXIT },
+            { PR_lstat,         FILTER_SYSEXIT },
             { PR_lstat64,       FILTER_SYSEXIT },
+            { PR_fstatat64,     FILTER_SYSEXIT },
+            { PR_newfstatat,    FILTER_SYSEXIT },
             FILTERED_SYSNUM_END,
         };
         extension->filtered_sysnums = filtered_sysnums;

@@ -373,6 +373,26 @@ void free_terminated_tracees()
 		if (tracee->terminated)
 			TALLOC_FREE(tracee);
 	}
+
+	/* Drain zombies that were never collected by their ptracer.
+	 * zombies are talloc children of their ptracer, so dead ptracers
+	 * (freed just above) already had their zombie lists cleaned up
+	 * recursively by talloc.  This loop handles still-alive ptracers
+	 * whose ptracees exited but whose wait(2) never consumed the
+	 * zombie entries.  Without this, zombies accumulate indefinitely.  */
+	next = tracees.lh_first;
+	while (next != NULL) {
+		Tracee *ptracer = next;
+		next = ptracer->link.le_next;
+
+		Tracee *zombie, *zombie_next;
+		zombie_next = ptracer->as_ptracer.zombies.lh_first;
+		while (zombie_next != NULL) {
+			zombie = zombie_next;
+			zombie_next = zombie->link.le_next;
+			TALLOC_FREE(zombie);
+		}
+	}
 }
 
 /**

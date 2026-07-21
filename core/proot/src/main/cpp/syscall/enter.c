@@ -1442,6 +1442,33 @@ int translate_syscall_enter(Tracee *tracee)
 			poke_reg(tracee, SYSARG_1, peek_reg(tracee, CURRENT, SYSARG_2));
 			poke_reg(tracee, SYSARG_2, peek_reg(tracee, CURRENT, SYSARG_3));
 			poke_reg(tracee, SYSARG_3, peek_reg(tracee, CURRENT, SYSARG_4));
+		} else if (peek_reg(tracee, CURRENT, SYSARG_3) == 0
+			   && (peek_reg(tracee, CURRENT, SYSARG_4) & AT_EMPTY_PATH) == 0) {
+			/* Resolve fd-based execveat via /proc/self/fd/<fd>/<path>.
+			 * This handles Alpine apk-tools execveat with a memfd or any
+			 * dirfd + relative path combination.  Convert to execve by
+			 * reading /proc/<pid>/fd/<fd> for the path.  */
+			int dirfd = (int) peek_reg(tracee, CURRENT, SYSARG_1);
+			char fd_path[PATH_MAX];
+			int len;
+
+			len = snprintf(fd_path, sizeof(fd_path),
+				       "/proc/%d/fd/%d", tracee->pid, dirfd);
+			if (len <= 0 || (size_t) len >= sizeof(fd_path))
+				return -ENOENT;
+
+			fd_path[len] = '\0';
+			word_t argv = peek_reg(tracee, CURRENT, SYSARG_3);
+			word_t envp = peek_reg(tracee, CURRENT, SYSARG_4);
+
+			/* Write the resolved path into tracee memory and
+			 * replace SYSARG_1 with it, then downgrade to execve.  */
+			set_sysnum(tracee, PR_execve);
+			status = set_sysarg_path(tracee, fd_path, SYSARG_1);
+			if (status < 0)
+				break;
+			poke_reg(tracee, SYSARG_2, argv);
+			poke_reg(tracee, SYSARG_3, envp);
 		} else {
 			note(tracee, ERROR, SYSTEM, "execveat() with non-AT_FDCWD fd is not currently supported");
 			status = -ENOSYS;
@@ -2027,6 +2054,8 @@ int translate_syscall_enter(Tracee *tracee)
 			status = translate_sysarg(tracee, SYSARG_1, REGULAR);
 		if (status >= 0)
 			maybe_redirect_userns_file(tracee, SYSARG_1);
+		if (status < 0)
+			tracee->sysexit_pending = false;
 		break;
 
 	case PR_fchownat:
@@ -2156,6 +2185,8 @@ int translate_syscall_enter(Tracee *tracee)
 			status = translate_path2(tracee, dirfd, path, SYSARG_2, REGULAR);
 		if (status >= 0)
 			maybe_redirect_userns_file(tracee, SYSARG_2);
+		if (status < 0)
+			tracee->sysexit_pending = false;
 		break;
 
 	case PR_readlinkat:

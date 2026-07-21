@@ -42,6 +42,10 @@ class TerminalBackEnd(
     // happens per this window, even when a build spews thousands of lines/second.
     private val frameBudgetMs = 16L
 
+    /** Set by onTextChanged; consumed by TerminalViewLayout.update lambda
+     *  to skip redundant onScreenUpdated() when there is no new terminal output. */
+    @Volatile var needsUpdate = true
+
     private val flushRedraw = Runnable {
         redrawScheduled = false
         lastRedrawMs = SystemClock.uptimeMillis()
@@ -60,6 +64,7 @@ class TerminalBackEnd(
         if (!activity.isTerminalResumed) return
 
         if (isActiveSession(changedSession)) {
+            needsUpdate = true
             // Active tab: explicit time-based debounce. Multiple output bursts inside one
             // frame budget collapse into a single onScreenUpdated(); a trailing flush is
             // always scheduled so the final output is never dropped.

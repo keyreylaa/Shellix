@@ -88,38 +88,38 @@ fun TerminalDrawer(
                 }
             }
 
-            sessionBinder?.getService()?.sessionList?.entries?.map { it.key to it.value }?.toList()?.let { sessions ->
-                LazyColumn {
-                    items(sessions) { (sessionId, meta) ->
-                        val isSelected = sessionId == sessionBinder.getService().currentSession.value.first
-                        SelectableCard(
-                            selected = isSelected,
-                            onSelect = { onSessionSelected(sessionId) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp)
+            val sessions by remember(sessionBinder) {
+                derivedStateOf {
+                    sessionBinder?.getService()?.sessionList?.entries?.map { it.key to it.value }.orEmpty()
+                }
+            }
+            LazyColumn {
+                items(sessions, key = { it.first }) { (sessionId, meta) ->
+                    val isSelected = sessionId == sessionBinder.getService().currentSession.value.first
+                    SelectableCard(
+                        selected = isSelected,
+                        onSelect = { onSessionSelected(sessionId) },
+                        modifier = Modifier.fillMaxWidth().padding(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(text = meta.name, style = MaterialTheme.typography.bodyLarge)
-
-                                if (!isSelected) {
-                                    Spacer(modifier = Modifier.weight(1f))
-                                    IconButton(
-                                        onClick = {
-                                            if (twoStep) confirmTerminateId = sessionId
-                                            else sessionBinder.terminateSession(sessionId)
-                                        },
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Outlined.Delete,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
+                            Text(text = meta.name, style = MaterialTheme.typography.bodyLarge)
+                            if (!isSelected) {
+                                Spacer(modifier = Modifier.weight(1f))
+                                IconButton(
+                                    onClick = {
+                                        if (twoStep) confirmTerminateId = sessionId
+                                        else sessionBinder.terminateSession(sessionId)
+                                    },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Delete,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
                                 }
                             }
                         }

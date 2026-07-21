@@ -164,12 +164,22 @@ void translate_syscall(Tracee *tracee)
 #ifdef HAS_POKEDATA_WORKAROUND
 		if (tracee->pokedata_workaround_cancelled_syscall) {
 			tracee->pokedata_workaround_cancelled_syscall = false;
-			tracee->pokedata_workaround_relaunched_syscall = true;
+			if (tracee->pokedata_workaround_retries < 3) {
+				tracee->pokedata_workaround_relaunched_syscall = true;
+				tracee->restart_how = PTRACE_SYSCALL;
+				tracee->status = 0;
+				poke_reg(tracee, INSTR_POINTER, peek_reg(tracee, CURRENT, INSTR_POINTER) - SYSTRAP_SIZE);
+				push_specific_regs(tracee, false);
+				tracee->pokedata_workaround_retries++;
+				return;
+			}
+			/* Max retries exceeded: fail the syscall instead of looping */
+			tracee->pokedata_workaround_retries = 0;
+			tracee->pokedata_workaround_relaunched_syscall = false;
 			tracee->restart_how = PTRACE_SYSCALL;
-			tracee->status = 0;
-			poke_reg(tracee, INSTR_POINTER, peek_reg(tracee, CURRENT, INSTR_POINTER) - SYSTRAP_SIZE);
-			push_specific_regs(tracee, false);
-			return;
+			tracee->status = -EFAULT;
+			set_sysnum(tracee, PR_void);
+			poke_reg(tracee, SYSARG_RESULT, (word_t) -EFAULT);
 		}
 #endif
 
@@ -215,6 +225,7 @@ void translate_syscall(Tracee *tracee)
 		tracee->status = 0;
 #ifdef HAS_POKEDATA_WORKAROUND
 		tracee->pokedata_workaround_cancelled_syscall = false;
+		tracee->pokedata_workaround_retries = 0;
 #endif
 
 		/* Insert the next chained syscall, if any.  */
